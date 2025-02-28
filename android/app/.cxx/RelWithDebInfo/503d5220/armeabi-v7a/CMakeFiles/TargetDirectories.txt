@@ -1,0 +1,2 @@
+C:/Users/ghola/TabletApplication/android/app/.cxx/RelWithDebInfo/503d5220/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/ghola/TabletApplication/android/app/.cxx/RelWithDebInfo/503d5220/armeabi-v7a/CMakeFiles/rebuild_cache.dir

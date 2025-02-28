@@ -1,0 +1,2 @@
+C:/Users/ghola/TabletApplication/android/app/.cxx/Debug/5w6e5t3o/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/ghola/TabletApplication/android/app/.cxx/Debug/5w6e5t3o/x86_64/CMakeFiles/rebuild_cache.dir

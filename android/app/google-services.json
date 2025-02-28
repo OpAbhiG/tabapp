@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "526810364014",
+    "project_id": "webrtcvediocall",
+    "storage_bucket": "webrtcvediocall.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:526810364014:android:3a158732a7a25ae9490e7f",
+        "android_client_info": {
+          "package_name": "com.example.tablet_degim"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8nws9rk_ZE99OzWGlBLutTvGzZk630og"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
