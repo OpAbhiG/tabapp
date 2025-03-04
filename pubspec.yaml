@@ -63,8 +63,12 @@ dependencies:
 #  zego
   flutter_screenutil: ^5.9.3
   device_info_plus: ^11.2.0
+
   zego_uikit: ^2.27.19
   zego_uikit_prebuilt_call: ^4.16.16
+
+  flutter_callkit_incoming: ^2.5.0
+
 
 
 

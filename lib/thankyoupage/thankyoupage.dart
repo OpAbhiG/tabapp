@@ -241,7 +241,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen>
             ),
             const SizedBox(height: _Constants.smallSpacing),
             Text(
-              'Appointment Booked Successfully',
+              'Consultation complete Successfully',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey[600],

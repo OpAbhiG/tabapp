@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
+import '../SerialCommunication/USB_oxymitter_sensor.dart';
 import '../thankyoupage/thankyoupage.dart';
-// import '../booking_confirmation/booking_confirmation.dart'; // Import the booking confirmation screen
+import 'common.dart';
 
 class CallPage extends StatefulWidget {
   final String localUserId;
@@ -18,54 +19,43 @@ class CallPage extends StatefulWidget {
 }
 
 class _CallPageState extends State<CallPage> {
-  bool _showThankYouScreen = false;
-  Timer? _autoNavigateTimer; // Timer for auto-navigation
+  double bloodOxygen = 0;
+  double heartRate = 0;
+  double bodyTemp = 0.0;
+  late StreamSubscription sensorSubscription;
 
   @override
   void initState() {
     super.initState();
-
-    // Start a 10-minute timer to auto-navigate////////////
-    _autoNavigateTimer = Timer(const Duration(minutes: 10), () {
-      /////////////////////////////////////////////////////
-      if (mounted) {
-        _navigateToBookingConfirmation();
-      }
-    });
-
-    // Listen for call end (when no users are in the room)
-    // ZegoUIKit().getRoom().streamUserList.listen((userList) {
-    //   if (userList.isEmpty) {
-    //     _showThankYouOverlay();
-    //   }
-    // });
-
+    SerialPortService().start(); // ✅ Start SerialPort service
+    _startListeningToSensor();
   }
 
-  void _showThankYouOverlay() {
-    setState(() {
-      _showThankYouScreen = true;
-    });
-
-    // Automatically navigate to Booking Confirmation after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
+  void _startListeningToSensor() {
+    sensorSubscription = SerialPortService().sensorDataStream.listen((data) {
       if (mounted) {
-        _navigateToBookingConfirmation();
+        setState(() {
+          bloodOxygen = data['bloodOxygen'] ?? 0;
+          heartRate = data['heartRate'] ?? 0;
+          bodyTemp = data['bodyTemp'] ?? 0;
+        });
       }
     });
   }
 
-  void _navigateToBookingConfirmation() {
-    _autoNavigateTimer?.cancel(); // Cancel timer if navigation occurs early
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const BookingConfirmationScreen()),
-    );
+  void endCallAndGoToThankYouPage() {
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const BookingConfirmationScreen()),
+      );
+    }
   }
+
 
   @override
   void dispose() {
-    _autoNavigateTimer?.cancel(); // Clean up the timer
+    sensorSubscription.cancel(); // ✅ Proper cleanup
     super.dispose();
   }
 
@@ -80,17 +70,121 @@ class _CallPageState extends State<CallPage> {
           userName: widget.localUserId,
           callID: widget.id,
           config: ZegoUIKitPrebuiltCallConfig.oneOnOneVideoCall()
-            ..topMenuBar.isVisible = false
-            ..bottomMenuBar.isVisible = true,
+            ..topMenuBar.isVisible = true
+            ..bottomMenuBar.isVisible = true
+            ..avatarBuilder = customAvatarBuilder,
+
+
+    ),
+
+        Positioned(
+          bottom: 80, // Adjust to position above the floating button
+          left: MediaQuery.of(context).size.width / 2 - 100, // Center alignment
+          right: MediaQuery.of(context).size.width / 2 - 100,
+          child: SensorDataWidget(
+            bloodOxygen: bloodOxygen,
+            heartRate: heartRate,
+            bodyTemp: bodyTemp,
+          ),
         ),
 
-        // Show Thank You screen overlay in the middle
-        if (_showThankYouScreen)
-          Container(
-            color: Colors.white.withOpacity(0.9),
-            child: const Center(child: BookingConfirmationScreen()),
+
+        // // ✅ Floating Hang-Up Button
+        Positioned(
+          bottom: 20,
+          left: MediaQuery.of(context).size.width / 2 - 30,
+          // right: MediaQuery.of(context).size.width / 2 - 30,
+          child: FloatingActionButton(
+            backgroundColor: Colors.white,
+            onPressed: endCallAndGoToThankYouPage,
+            child: const Icon(Icons.download, color: Colors.black),
           ),
+        ),
+
       ],
     );
   }
 }
+
+
+/// ✅ Sensor Data Display Widget (Aligned at the Bottom Center)
+class SensorDataWidget extends StatelessWidget {
+  final double bloodOxygen;
+  final double heartRate;
+  final double bodyTemp;
+
+  const SensorDataWidget({
+    super.key,
+    required this.bloodOxygen,
+    required this.heartRate,
+    required this.bodyTemp,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      bottom: 80, // Adjust the position above the call button
+      left: 0,
+      right: 0,
+      child: Center(
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.8, // ✅ Adjust width
+          child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            SensorCard(title: "Oxygen", value: "$bloodOxygen%", icon: Icons.bubble_chart,),
+            SensorCard(title: "Heart Rate", value: "$heartRate BPM", icon: Icons.favorite),
+            SensorCard(title: "Temp", value: "$bodyTemp °C", icon: Icons.thermostat),
+          ],
+        ),
+      ),
+      ),
+    );
+  }
+}
+
+/// ✅ Individual Sensor Card Widget
+class SensorCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+
+  const SensorCard({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      // decoration: BoxDecoration(
+      //   color: Colors.black.withOpacity(0.7), // Dark background
+      //   borderRadius: BorderRadius.circular(10),
+      // ),
+      // child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+
+          children: [
+            Icon(icon, color: Colors.white, size: 20), // Sensor Icon
+            const SizedBox(height: 2),
+            Text(
+              title,
+              style: const TextStyle(color: Colors.white70, fontSize: 10, decoration: TextDecoration.none,),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold,decoration: TextDecoration.none,),
+            ),
+          ],
+        ),
+      // ),
+    );
+  }
+}
+
+
