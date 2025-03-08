@@ -14,6 +14,7 @@ void main() async{
   await Hive.openBox('userBox'); // Open box once at startup
   await Firebase.initializeApp();
     runApp(const MyApp());
+
 }
 
 class MyApp extends StatelessWidget {

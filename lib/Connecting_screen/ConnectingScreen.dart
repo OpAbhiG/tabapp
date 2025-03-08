@@ -7,7 +7,7 @@ import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import '../APIServices/base_api.dart';
 import '../VideoCall/call_page.dart';
-import '../VideoCall/video_call_screen.dart';
+// import '../VideoCall/video_call_screen.dart';
 import '../main.dart';
 
 class ConnectingScreen extends StatefulWidget {
@@ -204,6 +204,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
       if (response.statusCode == 200) {
         if (jsonResponse.containsKey('meeting_id')) {
           String meetingId = jsonResponse['meeting_id'];
+          // String sessionid=jsonResponse['session_id'];
           print("[CONSULTATION SUCCESS] Meeting ID: $meetingId");
 
           // _checkDoctorResponse(meetingId);
@@ -213,7 +214,10 @@ class _ConnectingScreenState extends State<ConnectingScreen>
             MaterialPageRoute(
               builder: (context) => CallPage(
                 localUserId: localUserID, // Replace with actual user ID
-                id: meetingId
+                id: meetingId,
+                sessionid:sessionId,
+                // token:widget.token,
+
               ),
             ),
           );
@@ -313,7 +317,9 @@ class _ConnectingScreenState extends State<ConnectingScreen>
               MaterialPageRoute(
                 builder: (context) => CallPage(
                     localUserId: localUserID, // Replace with actual user ID
-                    id: meetingId
+                    id: meetingId, sessionid: sessionId!,
+                  // sessionid: sessionId!,
+                  // token: widget.token,
                 ),
               ),
             );

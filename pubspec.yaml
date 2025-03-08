@@ -70,6 +70,13 @@ dependencies:
   flutter_callkit_incoming: ^2.5.0
 
 
+#  prescription
+  flutter_thermal_printer: ^0.0.4
+  esc_pos_printer: ^4.1.0
+  esc_pos_utils: ^1.1.0
+  libusb_new: ^1.0.0
+
+
 
 
 
