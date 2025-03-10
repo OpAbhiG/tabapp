@@ -216,7 +216,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
                 localUserId: localUserID, // Replace with actual user ID
                 id: meetingId,
                 sessionid:sessionId,
-                // token:widget.token,
+                token:widget.token,
 
               ),
             ),
@@ -318,8 +318,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
                 builder: (context) => CallPage(
                     localUserId: localUserID, // Replace with actual user ID
                     id: meetingId, sessionid: sessionId!,
-                  // sessionid: sessionId!,
-                  // token: widget.token,
+                  token: widget.token,
                 ),
               ),
             );

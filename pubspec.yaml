@@ -78,6 +78,10 @@ dependencies:
 
 
 
+  dio: ^5.8.0+1
+
+
+
 
 
 
