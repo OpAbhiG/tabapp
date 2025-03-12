@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       darkTheme: ThemeData.dark(),
-      // ----------home--- ImageCarousel(),
+      // home---> ImageCarousel(),//
 
       home: const ImageCarousel(),
 

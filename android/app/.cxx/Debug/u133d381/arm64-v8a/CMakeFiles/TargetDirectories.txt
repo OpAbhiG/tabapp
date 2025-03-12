@@ -1,0 +1,2 @@
+C:/Users/ghola/tab/tabapp/android/app/.cxx/Debug/u133d381/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/ghola/tab/tabapp/android/app/.cxx/Debug/u133d381/arm64-v8a/CMakeFiles/rebuild_cache.dir

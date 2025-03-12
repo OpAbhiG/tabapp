@@ -12,9 +12,11 @@ import '../main.dart';
 
 class ConnectingScreen extends StatefulWidget {
   final String token;
+  final String speciality;
   // final String price;
   const ConnectingScreen({super.key,
     required this.token,
+    required this.speciality,
     // required this.price
 
   });
@@ -132,7 +134,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
       );
 
       request.fields['token'] = widget.token;
-      request.fields['speciality_id'] = '1';
+      request.fields['speciality_id'] = widget.speciality;
       request.headers['Authorization'] = 'Bearer ${widget.token}';
 
       var response = await request.send();
@@ -183,7 +185,9 @@ class _ConnectingScreenState extends State<ConnectingScreen>
 
       request.fields['latitude'] = position.latitude.toString();
       request.fields['longitude'] = position.longitude.toString();
-      request.fields['speciality'] = '1';
+      request.fields['speciality'] = widget.speciality;
+      // request.fields['speciality'] = '1';
+
       request.fields['session_id'] = sessionId;
 
       request.headers['Authorization'] = 'Bearer ${widget.token}';
@@ -318,7 +322,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
                 builder: (context) => CallPage(
                     localUserId: localUserID, // Replace with actual user ID
                     id: meetingId, sessionid: sessionId!,
-                  token: widget.token,
+                    token: widget.token,
                 ),
               ),
             );

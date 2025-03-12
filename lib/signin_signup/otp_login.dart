@@ -4,9 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-// import 'package:shared_preferences/shared_preferences.dart';
-// import 'package:tablet_degim/ApiServices/base_api.dart';
-// import 'package:tablet_degim/Connecting_screen/ConnectingScreen.dart';
 import '../APIServices/base_api.dart';
 import '../Paymentgetway/pay.dart';
 import '../topSection/topsection.dart';
@@ -472,11 +469,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 ////////////////////////////this payment screen open
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => pay(
+              MaterialPageRoute(builder: (context) => PaymentScreen(
                 name: widget.name,
                 phoneNumber: widget.phoneNumber,
-                  token: token,
-                  price:widget.price
+                token: token,
+                price:widget.price,
+                specialityId: widget.speciality,
 
               )),
             );
