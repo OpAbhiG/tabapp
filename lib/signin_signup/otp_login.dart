@@ -6,12 +6,14 @@ import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../APIServices/base_api.dart';
 import '../Paymentgetway/pay.dart';
+import '../screen_saver/screen_saveradd.dart';
 import '../topSection/topsection.dart';
 
 
 class OtpLoginScreen extends StatefulWidget {
   final String speciality;
   final String price;
+
 
   const OtpLoginScreen({super.key,
     required this.speciality, required this.price});
@@ -314,8 +316,6 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
 }
 
 
-
-
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
   final String speciality;
@@ -365,7 +365,91 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       }
     });
   }
+  void showDialogBox(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Notification"),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
+  Future<void> checkDoctorAvailability(String token, String specialityId) async {
+    try {
+      final Uri apiUrl = Uri.parse("$baseapi/tab/is_speciality_doctors_available");
+
+      Map<String, String> specialityMapping = {
+        "General Physician": "1",              // Given in your example
+        "Dermatologist": "2",          // Given in your example
+        "Dentist": "3",                // Given in your example
+        "General Practitioner": "5",   // Inferred from "shoaib ab" and "akbar gulam" with MBBS
+        "Pediatrician": "6",           // Inferred as a possibility for "Spider Women"
+        "Gynecologist": "7",           // Inferred as a possibility for "abhishek gholap"
+        "Cardiologist": "8",           // Inferred for "Aftab Bhai" with 100 years experience
+        "Orthopedic Surgeon": "9",     // Inferred as a possibility for "NewSonam gupta"
+        "Neurologist": "10",           // Inferred as a possibility for "Jethalal Gada"
+      };
+
+      final Map<String, String> requestBody = {
+        "speciality_id": specialityMapping[specialityId] ?? "1",
+      };
+
+      print("API URL: $apiUrl");
+      print("Request Body: $requestBody");
+
+      final response = await http.post(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Authorization": "Bearer $token",
+        },
+        body: requestBody,
+      );
+
+      print("Doctor Availability Response: ${response.body}");
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data["error"] == null) {
+        bool isAvailable = data["consultations_available"] ?? false;
+
+        if (isAvailable) {
+          showSnackbar("Doctor is available!");
+        } else {
+          showSnackbar("No doctors available. try another...");
+
+          /// **Delay to allow snackbar to appear before navigation**
+          if (isAvailable) {
+            showDialogBox("Doctor is available!");
+          } else {
+            showDialogBox("No doctors available. Try another...");
+
+            Future.delayed(const Duration(seconds: 1), () {
+              if (mounted) {
+                navigateToNoDoctorScreen();
+              }
+            });
+          }
+
+        }
+      } else {
+        showSnackbar("Error: ${data["message"] ?? "Invalid response"}");
+      }
+    } catch (e) {
+      showSnackbar("Error checking doctor availability: ${e.toString()}");
+    }
+  }
 
   Future<void> resendOtp() async {
     setState(() => isLoading = true);
@@ -441,6 +525,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       print("Status Code: ${response.statusCode}");
       print("Response Body: ${response.body}");
 
+
       final Map<String, dynamic> data = jsonDecode(response.body);
 
       if (response.statusCode == 400) {
@@ -466,6 +551,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           print("Token ID Stored: $tokenId");
 
           if (mounted) {
+            await checkDoctorAvailability(token, widget.speciality);  // Call availability check
+
 ////////////////////////////this payment screen open
             Navigator.pushReplacement(
               context,
@@ -478,14 +565,18 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
               )),
             );
-
-            // Navigator.pushReplacement(
-            //   context,
-            //   MaterialPageRoute(builder: (context) => ConnectingScreen(
-            //     token: token,
-            //   ),
-            //   ),
-            // );
+//
+//             Navigator.pushReplacement(
+//               context,
+//               MaterialPageRoute(builder: (context) => pay(
+//                 name: widget.name,
+//                 phoneNumber: widget.phoneNumber,
+//                 token: token,
+//                 price:widget.price,
+//                 // specialityId: widget.speciality,
+//
+//               ),),
+//             );
           }
         } else {
           showSnackbar("OTP verification failed: Missing access token or token_id");
@@ -498,6 +589,18 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
+
+
+  }
+
+
+  void navigateToNoDoctorScreen() {
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => NoDoctorScreen()),
+      );
+    }
   }
 
 
@@ -506,6 +609,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       SnackBar(content: Text(message), duration: const Duration(seconds: 3)),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -630,17 +734,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text("Get via Call", style: TextStyle(color: Colors.indigo)),
-
-                  ),
+                  // TextButton(
+                  //   onPressed: () {},
+                  //   child: const Text("Get via Call", style: TextStyle(color: Colors.indigo,fontSize: 12)),
+                  //
+                  // ),
                   TextButton(
                     onPressed: canResendOtp ? resendOtp : null,
                     child: Text(
-                      canResendOtp ? "Resend OTP" : "Resend OTP in $countdownSeconds sec",
+                      canResendOtp ? "Resend OTP" : "Resend OTP $countdownSeconds sec",
                       style: TextStyle(
-                        color: canResendOtp ? Colors.blue : Colors.grey,
+                        color: canResendOtp ? Colors.blue : Colors.grey,fontSize: 12
                         // decoration: TextDecoration.underline, // Adds underline
                       ),
                     ),
@@ -678,5 +782,59 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     countdownTimer?.cancel();
     otpController.dispose();
     super.dispose();
+  }
+}
+
+
+
+
+// **Screen for when no doctor is available**
+class NoDoctorScreen extends StatefulWidget {
+  @override
+  _NoDoctorScreenState createState() => _NoDoctorScreenState();
+}
+class _NoDoctorScreenState extends State<NoDoctorScreen> {
+  int countdown = 5;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    startCountdown();
+  }
+
+  void startCountdown() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (countdown > 0) {
+        setState(() => countdown--);
+      } else {
+        _timer?.cancel();
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ImageCarousel()));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text("Currently, this specialty doctor is not available.", style: TextStyle(fontSize: 18)),
+            const SizedBox(height: 10),
+            const Text("Our backend team will connect with you.", style: TextStyle(fontSize: 16, color: Colors.grey)),
+            const SizedBox(height: 20),
+            Text("Redirecting in $countdown seconds...", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -28,29 +28,6 @@
 //
 //   }
 //
-//   // void _makePayment() {
-//   //   int amountInPaise = (double.parse(widget.price) * 100).toInt(); // Convert to paise
-//   //
-//   //   var options = {
-//   //
-//   //     'key': 'rzp_test_USRnc9D0LcPYTb', // Replace with your Razorpay key
-//   //     'amount': amountInPaise, // Amount in paise (e.g., 1000 = ₹10)
-//   //     'name': "hello",
-//   //     'description': 'Doctor Consultation Fees',
-//   //     'prefill': {
-//   //       'contact': "welcome",
-//   //       'email': 'bharat@example.com',
-//   //     },
-//   //     'theme': {'color': '#3399cc'},
-//   //   };
-//   //
-//   //   try {
-//   //     _razorpay.open(options);
-//   //   } catch (e) {
-//   //     print(e.toString());
-//   //   }
-//   // }
-// //v2
 //   void _makePayment() {
 //     int amountInPaise = (double.parse(widget.price) * 100).toInt(); // Convert to paise
 //
@@ -58,15 +35,15 @@
 //       'key': 'rzp_test_USRnc9D0LcPYTb', // Replace with your Razorpay key
 //       'amount': amountInPaise, // Amount in paise (e.g., 1000 = ₹10)
 //       'currency': 'INR',
-//       'name': "hello",
-//       'description': 'Doctor Consultation Fees',
+//       'name': widget.name,
+//       // 'description': 'Doctor Consultation Fees',
 //       'prefill': {
 //         'contact': widget.phoneNumber,
-//         'email': 'bharat@example.com',
+//         // 'email': 'bharat@example.com',
 //       },
 //       'theme': {'color': '#3399cc'},
 //       'method': {
-//         'qr': true // This will enable only QR Code payment
+//         'qr': true
 //       },
 //     };
 //
@@ -83,12 +60,12 @@
 //     ScaffoldMessenger.of(context).showSnackBar(
 //         SnackBar(content: Text("Payment Successful: ${response.paymentId}")));
 //
-//     Future.delayed(const Duration(seconds: 0), () {
+//     Future.delayed(const Duration(seconds: 3), () {
 //       Navigator.pushReplacement(
 //         context,
 //         MaterialPageRoute(builder: (context) => ConnectingScreen(
-//
 //           token: widget.token,
+//           speciality: '1',
 //         )),
 //       );
 //     }
@@ -323,9 +300,9 @@
 //                                 ),
 //                               ),
 //                             ],
-//                           ),import 'dart:async';
-
-
+//                           ),
+//
+//
 //                         ],
 //                       ),
 //                     ),
@@ -349,15 +326,26 @@
 // }
 
 
-
+//QR code payment
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../APIServices/base_api.dart';
 import '../Connecting_screen/ConnectingScreen.dart';
 import '../topSection/topsection.dart';
+import 'package:crypto/crypto.dart';
+
+String generateSignature(String payload, String secretKey) {
+  final key = utf8.encode(secretKey);
+  final bytes = utf8.encode(payload);
+  final hmacSha256 = Hmac(sha256, key);
+  final digest = hmacSha256.convert(bytes);
+
+  return digest.toString();
+  // return digest.bytes.map((b) => b.toRadixString(16).padLeft(2,'0')).join();
+}
 
 class PaymentScreen extends StatefulWidget {
   final String token;
@@ -380,24 +368,89 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
+
   bool _isLoading = false;
   String? _qrCodeUrl;
   String? _qrCodeId;
   String? _paymentId;
   Timer? _paymentCheckTimer;
   String? _rezorpay_orderId;
+  String? _signature; // Added to store signature from QR code generation response
+
+
+
+
+
+
 
   @override
   void initState() {
-    super.initState();
+  super.initState();
+
   }
 
   @override
   void dispose() {
-    _paymentCheckTimer?.cancel();
-    super.dispose();
+  _paymentCheckTimer?.cancel();
+  super.dispose();
   }
 
+
+
+  void showQRCodeDialog() {
+    if (_qrCodeUrl != null) { // ✅ QR code URL available hai tabhi pop-up dikhao
+      showDialog(
+        context: context,
+        builder: (context) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Scan to Pay',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Image.network(
+                    _qrCodeUrl!,
+                    width: 300,
+                    height: 300,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 300,
+                        height: 300,
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: Text('Failed to load QR code'),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text(
+                      "Close",
+                      style: TextStyle(color: Colors.red, fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      _showErrorMessage("QR Code not available. Please generate again.");
+    }
+  }
   // Generate QR code from the API
   Future<void> _generateQRCode() async {
     setState(() {
@@ -411,17 +464,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
       // Add headers
       request.headers.addAll({
         'Authorization': 'Bearer ${widget.token}',
+        'Content-Type': 'application/x-www-form-urlencoded',
       });
 
-      // Add form-data fields (as text)
-      request.fields['speciality_id'] = widget.specialityId; // Ensure it's a string
-      request.fields['amount'] = widget.price;
-      request.fields['name'] = widget.name;
-      request.fields['phone'] = widget.phoneNumber;
+      // Specialty mapping
+      Map<String, String> specialityMapping = {
+        "General Physician": "1",
+        "Dermatologist": "2",
+        "Dentist": "3",
+        "General Practitioner": "5",
+        "Pediatrician": "6",
+        "Gynecologist": "7",
+        "Cardiologist": "8",
+        "Orthopedic Surgeon": "9",
+        "Neurologist": "10",
+      };
+
+      String mappedSpecialityId = specialityMapping[widget.specialityId] ?? "1";
+      request.fields['speciality_id'] = mappedSpecialityId;
 
       print('Sending QR Code Request:');
       print('URL: $url');
-      print('Headers: ${request.headers}');
       print('Fields: ${request.fields}');
 
       final response = await request.send();
@@ -435,11 +498,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
         setState(() {
           _qrCodeUrl = data['qr_code_url'];
           _qrCodeId = data['qr_code_id'];
-          _rezorpay_orderId=data['razorpay_order_id'];
+          _rezorpay_orderId = data['razorpay_order_id'];
           _isLoading = false;
         });
 
-        _startPaymentStatusCheck();
+
+
+        showQRCodeDialog();
+
+        // 🔹 Start checking payment status every 5 seconds
+        _paymentCheckTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+          _checkPaymentStatus();
+        });
+
       } else {
         setState(() {
           _isLoading = false;
@@ -454,72 +525,95 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  // Start timer to check payment status periodically
-  void _startPaymentStatusCheck() {
-    _paymentCheckTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      _checkPaymentStatus();
-    });
-  }
 
-  // Check payment status
   Future<void> _checkPaymentStatus() async {
-    if (_qrCodeId == null) return;
     if (_rezorpay_orderId == null) {
-      print(_rezorpay_orderId);
-      print(_qrCodeId);
-      print('QR Code ID is null, skipping request.');
+      print('Razorpay Order ID is null, skipping request.');
       return;
     }
+
     try {
+      final payload = jsonEncode({
+        "event": "payment.captured",
+        "payload": {
+          "payment": {
+            "entity": {
+              "id":_paymentId,
+              "order_id": _rezorpay_orderId,
+              "amount":widget.price,
+              "currency":"INR",
+              "status":"capture"
+            }
+          }
+        }
+      });
+
+      const secretKey = "U2c9VpTGa6a@JxpR@JaB@bu";
+      final signature = generateSignature(payload, secretKey);
+
       final response = await http.post(
         Uri.parse('$baseapi/tab/live-verification'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${widget.token}',
+          'X-Razorpay-Signature': signature,
         },
-        body: jsonEncode({
-          // 'qr_code_id': _qrCodeId,
-          'razorpay_order_id': _rezorpay_orderId, // Change from qr_code_id
-          // Add any other required parameters
-        }),
+        body: payload,
       );
+
+      print("---- Payment Status Response ----");
+      print("---------------------------------");
+      print('1 Payment Status Check Response: ${response.statusCode}');
+      print('2 Payment Status Check Body: ${response.body}');
+      print('3 Sending verification request:');
+      print('4 Body: $payload');
+      print('5 Headers: ${response.request?.headers}');
+      print("---------------------------------");
+
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+      print('Headers: ${response.headers}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print(response.body);
-
-        // Check if payment was successful
-        if (data['event'] == 'payment.captured') {
-          _paymentCheckTimer?.cancel();
-          _paymentId = data['payload']['payment']['entity']['id'];
+        if (response.statusCode != 500) {
+          _paymentCheckTimer?.cancel(); // Stop checking once verified
+          _paymentId = data['payload']?['payment']?['entity']?['id'];
           _handlePaymentSuccess();
+        } else {
+          print('Payment status message: ${data['message']}');
         }
+      } else {
+        print('Error: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('Error checking payment status: ${e.toString()}');
+      print('Exception during payment status check: ${e.toString()}');
     }
   }
 
+
   void _handlePaymentSuccess() {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Payment Successful: $_paymentId")),
+       SnackBar(content: Text("Payment Successful: $_paymentId")),
     );
 
     Future.delayed(const Duration(seconds: 1), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => ConnectingScreen(
-          token: widget.token,
-          speciality: widget.specialityId,
-        )),
+        MaterialPageRoute(
+          builder: (context) => ConnectingScreen(
+            token: widget.token,
+            speciality: widget.specialityId,
+          ),
+        ),
       );
     });
   }
 
   void _showErrorMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+  ScaffoldMessenger.of(context).showSnackBar(
+  SnackBar(content: Text(message)),
+  );
   }
 
   @override
@@ -613,7 +707,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         TextField(
                           controller: TextEditingController(text: widget.name),
                           enabled: false,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             border: OutlineInputBorder(),
                           ),
                         ),
@@ -630,55 +724,55 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               color: Colors.green
                           ),
                         ),
-                        const SizedBox(height: 20),
-
-                        // QR Code Display Section
-                        if (_qrCodeUrl != null)
-                          Center(
-                            child: Column(
-                              children: [
-                                Image.network(
-                                  _qrCodeUrl!,
-                                  height: 200,
-                                  width: 200,
-                                  fit: BoxFit.contain,
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Center(
-                                      child: CircularProgressIndicator(
-                                        value: loadingProgress.expectedTotalBytes != null
-                                            ? loadingProgress.cumulativeBytesLoaded /
-                                            loadingProgress.expectedTotalBytes!
-                                            : null,
-                                      ),
-                                    );
-                                  },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      height: 200,
-                                      width: 200,
-                                      color: Colors.grey[200],
-                                      child: Center(
-                                        child: Text('Failed to load QR code'),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Scan the QR code to complete payment',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                  textAlign: TextAlign.center,
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Payment status is being checked automatically',
-                                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
+                        // const SizedBox(height: 20),
+                        //
+                        // // QR Code Display Section
+                        // if (_qrCodeUrl != null)
+                        //   Center(
+                        //     child: Column(
+                        //       children: [
+                        //         Image.network(
+                        //           _qrCodeUrl!,
+                        //           height: 200,
+                        //           width: 200,
+                        //           fit: BoxFit.contain,
+                        //           loadingBuilder: (context, child, loadingProgress) {
+                        //             if (loadingProgress == null) return child;
+                        //             return Center(
+                        //               child: CircularProgressIndicator(
+                        //                 value: loadingProgress.expectedTotalBytes != null
+                        //                     ? loadingProgress.cumulativeBytesLoaded /
+                        //                     loadingProgress.expectedTotalBytes!
+                        //                     : null,
+                        //               ),
+                        //             );
+                        //           },
+                        //           errorBuilder: (context, error, stackTrace) {
+                        //             return Container(
+                        //               height: 200,
+                        //               width: 200,
+                        //               color: Colors.grey[200],
+                        //               child: const Center(
+                        //                 child: Text('Failed to load QR code'),
+                        //               ),
+                        //             );
+                        //           },
+                        //         ),
+                        //         const SizedBox(height: 16),
+                        //         const Text(
+                        //           'Scan the QR code to complete payment',
+                        //           style: TextStyle(fontWeight: FontWeight.bold),
+                        //           textAlign: TextAlign.center,
+                        //         ),
+                        //         const SizedBox(height: 8),
+                        //         Text(
+                        //           'Payment status is being checked automatically',
+                        //           style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        //           textAlign: TextAlign.center,
+                        //         ),
+                        //       ],
+                        //     ),
+                        //   ),
 
                         const SizedBox(height: 20),
                         Row(
@@ -687,81 +781,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               child: ElevatedButton(
                                 onPressed: _qrCodeUrl == null
                                     ? () => _generateQRCode()
-                                    : null, // Disable once QR is shown
+                                    : () => showQRCodeDialog(), // Reopen QR Code Popup
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.red,
                                   padding: const EdgeInsets.symmetric(vertical: 14),
                                 ),
                                 child: _isLoading
-                                    ? CircularProgressIndicator(color: Colors.white)
+                                    ? const CircularProgressIndicator(color: Colors.white)
                                     : Text(
-                                  _qrCodeUrl == null
-                                      ? 'Generate Payment QR'
-                                      : 'QR Code Generated',
-                                  style: TextStyle(color: Colors.white, fontSize: 16),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            TextButton(
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      title: const Text(
-                                        "Cancel Confirmation",
-                                        style: TextStyle(fontWeight: FontWeight.bold),
-                                      ),
-                                      content: const Text(
-                                        "Are you sure you want to cancel? Your progress will not be saved.",
-                                        style: TextStyle(color: Colors.black87),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.of(context).pop(),
-                                          child: const Text(
-                                            "Stay",
-                                            style: TextStyle(color: Colors.green, fontSize: 16),
-                                          ),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                            Navigator.of(context).pop();
-                                            Navigator.of(context).pop();
-                                            Navigator.of(context).pop();
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.red,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(5),
-                                            ),
-                                          ),
-                                          child: const Text(
-                                            "Cancel",
-                                            style: TextStyle(color: Colors.white, fontSize: 16),
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              },
-                              child: const Text(
-                                'Cancel',
-                                style: TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold
+                                  _qrCodeUrl == null ? 'Generate Payment QR' : 'View QR Code',
+                                  style: const TextStyle(color: Colors.white, fontSize: 16),
                                 ),
                               ),
                             ),
                           ],
                         ),
+
                       ],
                     ),
                   ),

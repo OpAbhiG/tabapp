@@ -1,0 +1,2 @@
+C:/Users/ghola/tab/tabapp/android/app/.cxx/RelWithDebInfo/1470k57b/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/ghola/tab/tabapp/android/app/.cxx/RelWithDebInfo/1470k57b/arm64-v8a/CMakeFiles/rebuild_cache.dir

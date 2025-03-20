@@ -551,6 +551,7 @@ class SpecialitiesScreen extends StatefulWidget {
 }
 
 class _SpecialitiesScreenState extends State<SpecialitiesScreen> {
+
   Future<List<Map<String, dynamic>>> fetchSpecialities() async {
     final response = await http.get(Uri.parse("$baseapi/tab/tb-speciality"));
 
@@ -564,11 +565,11 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> {
   }
 
   final Map<String, List<Map<String, dynamic>>> concerns = {
-    "General Physician": [{"title": "Cough & Cold", "image": 'assets/consern/cough.jpg'}],
-    "Dermatologist": [{"title": "Skin Problem", "image": 'assets/consern/skin.jpg'}],
-    "Pediatrician": [{"title": "Child Health", "image": 'assets/sickkid.jpg'}],
-    "Neurologist": [{"title": "Performance Issue", "image": 'assets/consern/performance.jpg'}],
-    "Gynecologist": [{"title": "Period Problem", "image": 'assets/consern/Period.jpg'}],
+    "General Physician": [{"title": "Cough & Cold", "image": 'assets/doctor.png'}],
+    "Dermatologist": [{"title": "Skin Problem", "image": 'assets/img.png'}],
+    "Pediatrician": [{"title": "Child Health", "image": 'assets/phy.png'}],
+    "Neurologist": [{"title": "Performance Issue", "image": 'assets/s1.jpg'}],
+    "Gynecologist": [{"title": "Period Problem", "image": 'assets/s2.jpg'}],
   };
 
   @override
@@ -647,16 +648,16 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> {
 
   Widget _buildSpecialityCard(BuildContext context, Map<String, dynamic> data) {
     Map<String, String> specialityImages = {
-      "General Physician": 'assets/general.jpg',
-      "Cardiologist": 'assets/doctor/d2.jpg',
-      "Dermatologist": 'assets/dermatology.jpg',
+      "General Physician": 'assets/doctor/d2.jpg',
+      "Cardiologist": 'assets/doctor/d1.jpg',
+      "Dermatologist": 'assets/doctor/d5.jpg',
       "Neurologist": 'assets/doctor/d4.jpg',
-      "Pediatrician": 'assets/doctor/d5.jpg',
-      "Orthopedic": 'assets/doctor/d5.jpg',
-      "Psychiatrist": 'assets/psychiatry.jpg',
+      "Pediatrician": 'assets/doctor/d3.jpg',
+      "Orthopedic": 'assets/doctor/d2.jpg',
+      "Psychiatrist": 'assets/doctor/d1.jpg',
     };
 
-    String specialityImage = specialityImages[data['speciality_name']] ?? 'assets/s4.jpg';
+    String specialityImage = specialityImages[data['speciality_name']] ?? 'assets/doctor.png';
 
     return GestureDetector(
       onTap: () {

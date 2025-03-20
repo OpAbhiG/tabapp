@@ -3,261 +3,13 @@ import 'package:PatientTabletApp/APIServices/base_api.dart';
 import 'package:flutter/material.dart';
 import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
 import '../SerialCommunication/USB_oxymitter_sensor.dart';
-// import '../thankyoupage/thankyoupage.dart';
 import 'common.dart';
 import 'package:http/http.dart' as http;
-
-
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'dart:convert';
 
-class TabPrescriptionScreen extends StatefulWidget {
-  final String sessionId;
-  final String token;
-
-  const TabPrescriptionScreen({
-    super.key,
-    required this.sessionId,
-    required this.token,
-  });
-
-  @override
-  _TabPrescriptionScreenState createState() => _TabPrescriptionScreenState();
-}
-
-class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
-  bool isLoading = true;
-  List<dynamic> prescriptions = [];
-  String doctorName = '';
-  String licenseNumber = '';
-  String errorMessage = '';
-
-  @override
-  void initState() {
-    super.initState();
-    fetchPrescriptionData();
-  }
-
-  void _showSnackBar(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-    }
-  }
-
-  Future<void> fetchPrescriptionData() async {
-    setState(() {
-      isLoading = true;
-      errorMessage = '';
-    });
-
-    try {
-      // Build the URL with query parameters
-      final Uri uri = Uri.parse('$baseapi/tab/get_drug_list_by_session')
-          .replace(queryParameters: {'session_id': widget.sessionId});
-
-      // Make the GET request
-      final response = await http.get(
-        uri,
-        headers: {
-          'Authorization': 'Bearer ${widget.token}',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      // Check response
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final Map<String, dynamic> data = json.decode(response.body);
-
-        setState(() {
-          doctorName = data['doctor_name'] ?? 'Unknown Doctor';
-          licenseNumber = data['license'] ?? '';
-          prescriptions = data['prescriptions'] ?? [];
-          isLoading = false;
-        });
-
-        print('Prescription data fetched successfully: ${response.body}');
-      } else {
-        setState(() {
-          errorMessage = 'Failed to fetch prescriptions: ${response.statusCode}';
-          isLoading = false;
-        });
-        print('Failed to fetch prescriptions: ${response.statusCode}');
-        print('Response: ${response.body}');
-        _showSnackBar('Failed to fetch prescriptions');
-      }
-    } catch (e) {
-      setState(() {
-        errorMessage = 'Exception when fetching prescriptions: $e';
-        isLoading = false;
-      });
-      print('Exception when fetching prescriptions: $e');
-      _showSnackBar('Error loading prescriptions');
-    }
-  }
-
-  String getFrequencyPattern(dynamic frequencyValue) {
-    if (frequencyValue == null) return 'Unknown Frequency';
-
-    final Map<String, String> frequencyMapping = {
-      '1': '0-0-1',
-      '2': '0-1-0',
-      '3': '0-1-1',
-      '4': '1-0-0',
-      '5': '1-0-1',
-      '6': '1-1-0',
-      '7': '1-1-1',
-    };
-
-    String frequencyString = frequencyValue.toString();
-    return frequencyMapping[frequencyString] ?? 'Unknown Frequency';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Prescriptions',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: const Color(0xFF243B6D),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: fetchPrescriptionData,
-          ),
-        ],
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : errorMessage.isNotEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Error: $errorMessage',
-              style: const TextStyle(color: Colors.red),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: fetchPrescriptionData,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      )
-          : prescriptions.isEmpty
-          ? const Center(child: Text('No prescriptions found'))
-          : SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Card(
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Doctor: $doctorName',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF243B6D),
-                      ),
-                    ),
-                    if (licenseNumber.isNotEmpty)
-                      Text(
-                        'License: $licenseNumber',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Prescribed Medications',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF243B6D),
-              ),
-            ),
-            const SizedBox(height: 8),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: prescriptions.length,
-              itemBuilder: (context, index) {
-                final prescription = prescriptions[index];
-                return Card(
-                  elevation: 3,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${prescription['drug_name'] ?? 'Unknown Medication'}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF243B6D),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Dosage: ${prescription['dosage'] ?? ''} ${prescription['unit'] ?? ''}',
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        Text(
-                          'Frequency: ${getFrequencyPattern(prescription['frequency'])}',
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        Text(
-                          'Duration: ${prescription['duration'] ?? ''} days',
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        if (prescription['instruction'] != null)
-                          Text(
-                            'Instructions: ${prescription['instruction']}',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        if (prescription['notes'] != null)
-                          Text(
-                            'Notes: ${prescription['notes']}',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Created: ${prescription['created_at'] ?? ''}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// API Service Class
 class SensorApiService {
   final String baseUrl;
   final String token;
@@ -355,6 +107,378 @@ class SensorApiService {
   }
 }
 
+class TabPrescriptionScreen extends StatefulWidget {
+  final String sessionId;
+  final String token;
+
+  const TabPrescriptionScreen({
+    super.key,
+    required this.sessionId,
+    required this.token,
+  });
+
+  @override
+  _TabPrescriptionScreenState createState() => _TabPrescriptionScreenState();
+}
+
+class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
+
+  late Map<String, dynamic> prescriptionData;
+  String? prescriptionId;
+
+  bool isLoading = true;
+  List<dynamic> prescriptions = [];
+  String doctorName = '';
+  String licenseNumber = '';
+  String errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    fetchPrescriptionData();
+  }
+
+  void _showSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
+
+
+  Future<void> fetchPrescriptionData() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
+
+    try {
+      // Build the URL with query parameters
+      final Uri uri = Uri.parse('$baseapi/tab/get_drug_list_by_session')
+          .replace(queryParameters: {'session_id': widget.sessionId});
+
+      // Make the GET request with Authorization header
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer ${widget.token}',
+        },
+      );
+
+      // Check response status
+      if (response.statusCode == 200) {
+
+        print('Response Status Code: ${response.statusCode}');
+        print('Response Body: ${response.body}');
+
+        final Map<String, dynamic> data = json.decode(response.body);
+
+        setState(() {
+          doctorName = data['doctor_name'] ?? 'Unknown Doctor';
+          licenseNumber = data['license'] ?? '';
+          prescriptions = List.from(data['prescriptions'] ?? []); // Ensure it's a List
+          isLoading = false;
+        });
+
+        print('Prescription data fetched successfully: ${response.body}');
+      } else {
+        setState(() {
+          errorMessage = 'No prescriptions found (Error ${response.statusCode})';
+          isLoading = false;
+        });
+        print('Failed to fetch prescriptions: ${response.statusCode}');
+        print('Response: ${response.body}');
+        _showSnackBar('Failed to fetch prescriptions');
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error fetching prescriptions: $e';
+        isLoading = false;
+      });
+      print('Exception when fetching prescriptions: $e');
+      _showSnackBar('Error loading prescriptions');
+    }
+  }
+
+
+  String getFrequencyPattern(dynamic frequencyValue) {
+    if (frequencyValue == null) return 'Unknown Frequency';
+
+    final Map<String, String> frequencyMapping = {
+      '1': '0-0-1',
+      '2': '0-1-0',
+      '3': '0-1-1',
+      '4': '1-0-0',
+      '5': '1-0-1',
+      '6': '1-1-0',
+      '7': '1-1-1',
+    };
+
+    String frequencyString = frequencyValue.toString();
+    return frequencyMapping[frequencyString] ?? 'Unknown Frequency';
+  }
+
+  Future<void> _generatePrintPreview() async {
+    final pdf = pw.Document();
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return pw.Container(
+            padding: const pw.EdgeInsets.all(15),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Title
+                pw.Center(
+                  child: pw.Text(
+                    'PRESCRIPTION',
+                    style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+                  ),
+                ),
+                pw.Divider(thickness: 2),
+                pw.SizedBox(height: 15),
+
+                // Doctor Details
+                pw.Text('Doctor: $doctorName', style: const pw.TextStyle(fontSize: 16)),
+                pw.Text('License No: $licenseNumber', style: const pw.TextStyle(fontSize: 14)),
+                pw.Text('Generated on: ${DateTime.now()}',style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey)),
+
+                pw.SizedBox(height: 10),
+
+                // Prescription Table
+                pw.Table(
+                  border: pw.TableBorder.all(),
+                  columnWidths: {
+                    0: const pw.FlexColumnWidth(2),
+                    1: const pw.FlexColumnWidth(1),
+                    2: const pw.FlexColumnWidth(1),
+                    3: const pw.FlexColumnWidth(2),
+                    4: const pw.FlexColumnWidth(2),
+                  },
+                  children: [
+                    // Table Headers
+                    pw.TableRow(
+                      decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                      children: [
+                        _tableCell('Medicine', bold: true),
+                        _tableCell('Dosage', bold: true),
+                        _tableCell('Duration', bold: true),
+                        _tableCell('Frequency', bold: true),
+                        _tableCell('Instruction', bold: true),
+                      ],
+                    ),
+                    // Prescription Data
+                    ...prescriptions.map(
+                          (prescription) => pw.TableRow(
+                        children: [
+                          _tableCell(prescription['drug_name']),
+                          _tableCell(prescription['dosage']),
+                          _tableCell(prescription['duration']),
+                          _tableCell(getFrequencyPattern(prescription['frequency'])), // Updated line
+                          _tableCell(prescription['instruction']),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+
+
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    // Show Print Preview
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+    );
+  }
+
+// Helper function for table cell styling
+  pw.Widget _tableCell(String text, {bool bold = false}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(8),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(fontSize: 12, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'Prescriptions',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: const Color(0xFF243B6D),
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: fetchPrescriptionData,
+          ),
+        ],
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : errorMessage.isNotEmpty
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'No Data: $errorMessage',
+              style: const TextStyle(color: Colors.red),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: fetchPrescriptionData,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      )
+          : prescriptions.isEmpty
+          ? const Center(child: Text('No prescriptions found'))
+          : SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          // crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+
+          children: [
+             Card(
+              // elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Doctor: $doctorName',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        // fontWeight: FontWeight.bold,
+                        color: Color(0xFF243B6D),
+                      ),
+                    ),
+                    if (licenseNumber.isNotEmpty)
+                      Text(
+                        'License: $licenseNumber',
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Medications',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF243B6D),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: prescriptions.length,
+              itemBuilder: (context, index) {
+                final prescription = prescriptions[index];
+                return Card(
+                  elevation: 3,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${prescription['drug_name'] ?? 'Unknown Medication'}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF243B6D),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Dosage: ${prescription['dosage'] ?? ''} ${prescription['unit'] ?? ''}',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        Text(
+                          'Frequency: ${getFrequencyPattern(prescription['frequency'])}',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        Text(
+                          'Duration: ${prescription['duration'] ?? ''} days',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        if (prescription['instruction'] != null)
+                          Text(
+                            'Instructions: ${prescription['instruction']}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        if (prescription['notes'] != null)
+                          Text(
+                            'Notes: ${prescription['notes']}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Created: ${prescription['created_at'] ?? ''}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: prescriptionData != null && prescriptionId != null
+      //       ? () => printPrescription(prescriptionData!, prescriptionId!)
+      //       : null, // Disable the button if data is missing
+      //   backgroundColor: Color(0xFF243B6D),
+      //   child: const Icon(Icons.print, color: Colors.white),
+      // ),
+
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _generatePrintPreview(),
+        backgroundColor: const Color(0xFF243B6D),
+        child: const Icon(Icons.print, color: Colors.white),
+      ),
+
+
+
+
+
+    );
+  }
+
+
+}
+
 class CallPage extends StatefulWidget {
   final String localUserId;
   final String id;
@@ -416,22 +540,56 @@ class _CallPageState extends State<CallPage> {
     });
   }
 
-  void endCallAndGoToThankYouPage() {
-    // Send final data snapshot before ending call
-    if (bloodOxygen > 0 || heartRate > 0 || bodyTemp > 0) {
-      _apiService.sendDataNow(bloodOxygen, heartRate, bodyTemp);
-    }
-
-    // Stop API service
-    _apiService.stopSendingData();
-
+  void ShowPrescriptionDialog() {
     if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => TabPrescriptionScreen(sessionId: widget.sessionid, token: widget.token,)),
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text(
+              "Bharat Tele Clinic",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,color:Color(0xFF243B6D)),
+              textAlign: TextAlign.center, // Center-align the text
+            ),
+            // contentPadding: EdgeInsets.zero, // Removes default padding
+
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 300, // Adjust height as needed
+              child: Column(
+                children: [
+                  // Prescription Screen
+                  Expanded(
+                    child: TabPrescriptionScreen(
+                      sessionId: widget.sessionid,
+                      token: widget.token,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  child: const Icon(
+                    Icons.close, // Cross icon
+                    color: Colors.black, // Change color if needed
+                    size: 40, // Adjust size if necessary
+                  ),
+                ),
+              ),
+
+            ],
+          );
+        },
       );
     }
+
   }
+
 
   @override
   void dispose() {
@@ -471,13 +629,13 @@ class _CallPageState extends State<CallPage> {
 
         // ✅ Floating Hang-Up Button
         Positioned(
-          bottom: 20,
+          bottom: 180,
           left: MediaQuery.of(context).size.width / 2 - 30,
           right: MediaQuery.of(context).size.width / 2 - 30,
           child: FloatingActionButton(
             backgroundColor: Colors.white,
-            onPressed: endCallAndGoToThankYouPage,
-            child: const Icon(Icons.download, color: Colors.black),
+            onPressed: ShowPrescriptionDialog,
+            child: const Icon(Icons.print, color: Color(0xFF243B6D)),
           ),
         ),
       ],
@@ -501,7 +659,7 @@ class SensorDataWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      bottom: 80, // Adjust the position above the call button
+      bottom: 90, // Adjust the position above the call button
       left: 0,
       right: 0,
       child: Center(
@@ -510,9 +668,9 @@ class SensorDataWidget extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              SensorCard(title: "Oxygen", value: "$bloodOxygen%", icon: Icons.bubble_chart,),
-              SensorCard(title: "Heart Rate", value: "$heartRate BPM", icon: Icons.favorite),
-              SensorCard(title: "Temp", value: "$bodyTemp °C", icon: Icons.thermostat),
+              SensorCard(title: "Oxygen", value: "$bloodOxygen%", icon: Icons.bubble_chart, iconColor: Colors.blue,),
+              SensorCard(title: "Heart Rate", value: "$heartRate BPM", icon: Icons.favorite, iconColor: Colors.red,),
+              SensorCard(title: "Temp", value: "$bodyTemp °F", icon: Icons.thermostat, iconColor: Colors.orange,),
             ],
           ),
         ),
@@ -526,12 +684,14 @@ class SensorCard extends StatelessWidget {
   final String title;
   final String value;
   final IconData icon;
+  final Color iconColor;
 
   const SensorCard({
     super.key,
     required this.title,
     required this.value,
     required this.icon,
+    required this.iconColor,
   });
 
   @override
@@ -541,16 +701,16 @@ class SensorCard extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: Colors.white, size: 20), // Sensor Icon
+          Icon(icon, color: iconColor, size: 30), // Sensor Icon
           const SizedBox(height: 2),
           Text(
             title,
-            style: const TextStyle(color: Colors.white70, fontSize: 10, decoration: TextDecoration.none,),
+            style: const TextStyle(color: Colors.white70, fontSize: 12, decoration: TextDecoration.none,),
           ),
           const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, decoration: TextDecoration.none,),
+            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, decoration: TextDecoration.none,),
           ),
         ],
       ),

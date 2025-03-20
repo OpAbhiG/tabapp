@@ -134,7 +134,23 @@ class _ConnectingScreenState extends State<ConnectingScreen>
       );
 
       request.fields['token'] = widget.token;
-      request.fields['speciality_id'] = widget.speciality;
+
+      // request.fields['speciality_id'] = widget.speciality;
+      Map<String, String> specialityMapping = {
+        "General Physician": "1",              // Given in your example
+        "Dermatologist": "2",          // Given in your example
+        "Dentist": "3",                // Given in your example
+        "General Practitioner": "5",   // Inferred from "shoaib ab" and "akbar gulam" with MBBS
+        "Pediatrician": "6",           // Inferred as a possibility for "Spider Women"
+        "Gynecologist": "7",           // Inferred as a possibility for "abhishek gholap"
+        "Cardiologist": "8",           // Inferred for "Aftab Bhai" with 100 years experience
+        "Orthopedic Surgeon": "9",     // Inferred as a possibility for "NewSonam gupta"
+        "Neurologist": "10",           // Inferred as a possibility for "Jethalal Gada"
+      };
+
+      String mappedSpecialityId = specialityMapping[widget.speciality] ?? "1";
+      request.fields['speciality_id'] = mappedSpecialityId;
+
       request.headers['Authorization'] = 'Bearer ${widget.token}';
 
       var response = await request.send();
@@ -163,6 +179,17 @@ class _ConnectingScreenState extends State<ConnectingScreen>
       print("[SESSION CRITICAL ERROR] $e");
     }
   }
+  Map<String, String> specialityMapping = {
+    "General Physician": "1",
+    "Dermatologist": "2",
+    "Dentist": "3",
+    "General Practitioner": "5",
+    "Pediatrician": "6",
+    "Gynecologist": "7",
+    "Cardiologist": "8",
+    "Orthopedic Surgeon": "9",
+    "Neurologist": "10",
+  };
 
 
   Future<void> _requestConsultation(String sessionId) async {
@@ -185,7 +212,10 @@ class _ConnectingScreenState extends State<ConnectingScreen>
 
       request.fields['latitude'] = position.latitude.toString();
       request.fields['longitude'] = position.longitude.toString();
+
       request.fields['speciality'] = widget.speciality;
+      String mappedSpecialityId = specialityMapping[widget.speciality] ?? "1";
+      request.fields['speciality_id'] = mappedSpecialityId;
       // request.fields['speciality'] = '1';
 
       request.fields['session_id'] = sessionId;
