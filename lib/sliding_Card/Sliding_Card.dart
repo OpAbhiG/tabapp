@@ -648,12 +648,12 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> {
 
   Widget _buildSpecialityCard(BuildContext context, Map<String, dynamic> data) {
     Map<String, String> specialityImages = {
-      "General Physician": 'assets/doctor/d2.jpg',
+      "General Physician": 'assets/doctor/d3.jpg',
       "Cardiologist": 'assets/doctor/d1.jpg',
-      "Dermatologist": 'assets/doctor/d5.jpg',
-      "Neurologist": 'assets/doctor/d4.jpg',
+      "Dermatologist": 'assets/doctor/d3.jpg',
+      "Neurologist": 'assets/doctor/d1.jpg',
       "Pediatrician": 'assets/doctor/d3.jpg',
-      "Orthopedic": 'assets/doctor/d2.jpg',
+      "Orthopedic": 'assets/doctor/d4.jpg',
       "Psychiatrist": 'assets/doctor/d1.jpg',
     };
 

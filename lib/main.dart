@@ -21,12 +21,12 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      darkTheme: ThemeData.dark(),
+      // darkTheme: ThemeData.dark(),
       // home---> ImageCarousel(),//
 
-      home: const ImageCarousel(),
+      home: ImageCarousel(),
 
     );
   }
