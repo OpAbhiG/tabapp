@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math'; // Import for max() function
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -7,7 +8,6 @@ import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import '../APIServices/base_api.dart';
 import '../VideoCall/call_page.dart';
-// import '../VideoCall/video_call_screen.dart';
 import '../main.dart';
 
 class ConnectingScreen extends StatefulWidget {
@@ -26,7 +26,18 @@ class ConnectingScreen extends StatefulWidget {
 
 class _ConnectingScreenState extends State<ConnectingScreen>
     with SingleTickerProviderStateMixin {
+
   late AnimationController _controller;
+  int _quoteIndex = 0;
+  final List<String> quotes = [
+    "Your payment is successful Finding you the best available doctor",
+    "Thank you for your patience",
+    "A doctor will be with you shortly",
+    "We’re experiencing a slight delay, You’ll be connected soon",
+    "Our doctors are attending to other patients. Please hold on a little longer",
+    "We apologize for the wait. Your health is our priority. Thank you for understanding",
+    "You’re in the queue",
+  ];
   final GeolocatorPlatform _geolocator = GeolocatorPlatform.instance;
 
   String errorMessage='';
@@ -241,7 +252,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
           // String sessionid=jsonResponse['session_id'];
           print("[CONSULTATION SUCCESS] Meeting ID: $meetingId");
 
-          // _checkDoctorResponse(meetingId);
+          _checkDoctorResponse(meetingId);
 
           Navigator.push(
             context,
@@ -269,64 +280,83 @@ class _ConnectingScreenState extends State<ConnectingScreen>
     }
   }
 
-////////waiting code for doctor response
-  // Future<void> _checkDoctorResponse(String meetingId) async {
-  //   const int maxRetries = 20;  // Maximum times to check
-  //   int retryCount = 0;
-  //   const Duration checkInterval = Duration(seconds: 5); // Check every 5 sec
-  //
-  //   while (retryCount < maxRetries) {
-  //     await Future.delayed(checkInterval); // Wait before checking again
-  //
-  //     try {
-  //       var response = await http.get(
-  //         Uri.parse("$baseapi/patient/request_consultation?meeting_id=$meetingId"),
-  //         headers: {
-  //           'Authorization': 'Bearer ${widget.token}',
-  //         },
-  //       );
-  //
-  //       if (response.statusCode == 200) {
-  //         var jsonResponse = jsonDecode(response.body);
-  //
-  //         if (jsonResponse.containsKey('status')) {
-  //           String status = jsonResponse['status'];
-  //
-  //           if (status == "accepted") {
-  //             print("[CALL ACCEPTED] Starting video call...");
-  //             Navigator.pushReplacement(
-  //               context,
-  //               MaterialPageRoute(
-  //                 builder: (context) => VideoCallScreen(
-  //                   appointmentId: meetingId,
-  //                 ),
-  //               ),
-  //             );
-  //             return; // Exit loop after call starts
-  //           } else if (status == "rejected") {
-  //             print("[CALL REJECTED] Doctor declined the call.");
-  //             setState(() {
-  //               errorMessage = "Doctor is unavailable. Please try later.";
-  //             });
-  //             return;
-  //           }
-  //         }
-  //       }
-  //     } catch (e) {
-  //       print("[CHECK RESPONSE ERROR] $e");
-  //     }
-  //
-  //     retryCount++;
-  //   }
-  //
-  //   print("[TIMEOUT] No response from doctor.");
-  //   setState(() {
-  //     errorMessage = "No response from doctor.";
-  //   });
-  // }
+////waiting code for doctor response
+//   Future<void> _checkDoctorResponse(String meetingId) async {
+//     const int maxRetries = 20;  // Maximum times to check
+//     int retryCount = 0;
+//     const Duration checkInterval = Duration(seconds: 5); // Check every 5 sec
+//
+//     while (retryCount < maxRetries) {
+//       await Future.delayed(checkInterval); // Wait before checking again
+//
+//       try {
+//         var response = await http.get(
+//           Uri.parse("$baseapi/patient/request_consultation?meeting_id=$meetingId"),
+//           headers: {
+//             'Authorization': 'Bearer ${widget.token}',
+//           },
+//         );
+//
+//         if (response.statusCode == 200) {
+//           Navigator.push(
+//             context,
+//             MaterialPageRoute(
+//               builder: (context) => CallPage(
+//                 localUserId: localUserID, // Replace with actual user ID
+//                 id: meetingId, sessionid: sessionId!,
+//                 token: widget.token,
+//               ),
+//             ),
+//           );
+//           var jsonResponse = jsonDecode(response.body);
+//
+//           if (jsonResponse.containsKey('status')) {
+//             String status = jsonResponse['status'];
+//
+//             if (status == "accepted") {
+//               print("[CALL ACCEPTED] Starting video call...");
+//               Navigator.push(
+//                 context,
+//                 MaterialPageRoute(
+//                   builder: (context) => CallPage(
+//                     localUserId: localUserID, // Replace with actual user ID
+//                     id: meetingId, sessionid: sessionId!,
+//                     token: widget.token,
+//                   ),
+//                 ),
+//               );
+//               return; // Exit loop after call starts
+//             } else if (status == "rejected") {
+//               print("[CALL REJECTED] Doctor declined the call.");
+//               setState(() {
+//                 errorMessage = "Doctor is unavailable. Please try later.";
+//                 Navigator.push(
+//                   context,
+//                   MaterialPageRoute(
+//                     builder: (context) => const ImageCarousel(),
+//                   ),
+//                 );
+//
+//               });
+//               return;
+//             }
+//           }
+//         }
+//       } catch (e) {
+//         print("[CHECK RESPONSE ERROR] $e");
+//       }
+//
+//       retryCount++;
+//     }
+//
+//     print("[TIMEOUT] No response from doctor.");
+//     setState(() {
+//       errorMessage = "No response from doctor.";
+//     });
+//   }
 
 
-  /////without waiting dr i start vcall
+  ///without waiting dr i start vcall
 
   Future<void> _checkDoctorResponse(String meetingId) async {
     try {
@@ -383,13 +413,19 @@ class _ConnectingScreenState extends State<ConnectingScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
+    // Start a timer to change the quote every 2 seconds
+    Timer.periodic(Duration(seconds: 2), (timer) {
+      if (mounted) {
+        setState(() {
+          _quoteIndex = (_quoteIndex + 1) % quotes.length;
+        });
+      }
+    });
 
     _getCurrentLocation();
     _printFCMToken();  // Call function to print token
     _sendFCMTokenToBackend();
     _checkDoctorResponse(meetingId!);
-    // _requestConsultation();
-
     _getSessionId();
     _requestConsultation(sessionId!);
   }
@@ -407,127 +443,109 @@ class _ConnectingScreenState extends State<ConnectingScreen>
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Expanding circles (Radar Effect)
-              for (int i = 0; i < 3; i++)
-                AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    double value =
-                    (_controller.value - (i * 0.3)).clamp(0.0, 1.0);
-                    return Opacity(
-                      opacity: max(0, 1 - value),
-                      child: Container(
-                        width: screenWidth * 0.2 + (value * screenWidth * 0.7),
-                        height: screenWidth * 0.2 + (value * screenWidth * 0.7),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.black.withOpacity(0.5),
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-              // Centered content (Text → Image → Text)
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
+          children: [
+            // Centered radar animation
+            Center(
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  // "Searching" text
-                  Text(
-                    'Searching',
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.05,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                  // Expanding circles (Radar Effect)
+                  for (int i = 0; i < 3; i++)
+                    AnimatedBuilder(
+                      animation: _controller,
+                      builder: (context, child) {
+                        double value = (_controller.value - (i * 0.3)).clamp(0.0, 1.0);
+                        return Opacity(
+                          opacity: max(0, 1 - value),
+                          child: Container(
+                            width: screenWidth * 0.2 + (value * screenWidth * 0.7),
+                            height: screenWidth * 0.2 + (value * screenWidth * 0.7),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.black.withOpacity(0.5),
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                  SizedBox(height: screenHeight * 0.09), // Maintained spacing
 
-                  // Stethoscope Image
-                  Image.asset(
-                    'assets/doctor/stethoscope.png',
-                    width: screenWidth * 0.15, // Maintained original size
-                  ),
-                  SizedBox(height: screenHeight * 0.07), // Maintained spacing
-
-                  // Success Message
-                  Text(
-                    'Your payment is successful!\nFinding you the best available doctor...',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.038,
-                      color: Colors.grey[700],
+                  // Stethoscope Image - Exactly centered in the radar
+                  Center(
+                    child: Image.asset(
+                      'assets/doctor/stethoscope.png',
+                      width: screenWidth * 0.15,
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+
+            // Absolutely positioned text elements - completely static
+
+            // 1. "Searching" text at fixed position
+            Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: EdgeInsets.only(top: screenHeight * 0.15),
+                child: Text(
+                  'Searching',
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.05,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ),
+
+            // 3. Quotes with fixed position but flexible height
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: EdgeInsets.only(bottom: screenHeight * 0.10),
+                child: Container(
+                  width: screenWidth * 0.8,
+                  // Remove fixed height to allow content to determine size
+                  constraints: BoxConstraints(
+                    minHeight: screenHeight * 0.08,
+                    maxHeight: screenHeight * 0.20, // Allow more height for longer text
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // All quotes are always present but with changing opacity
+                      for (int i = 0; i < quotes.length; i++)
+                        AnimatedOpacity(
+                          opacity: _quoteIndex == i ? 1.0 : 0.0,
+                          duration: Duration(milliseconds: 400),
+                          child: Container(
+                            width: screenWidth * 0.8,
+                            child: Text(
+                              quotes[i],
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.035,
+                                color: Colors.blueGrey,
+                              ),
+                              // Make sure text wraps properly
+                              softWrap: true,
+                              overflow: TextOverflow.visible,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
-
-
 }
 
-
-// @override
-// Widget build(BuildContext context) {
-//   return Scaffold(
-//     body: SafeArea(
-//       child: Center(
-//         child: Stack(
-//           alignment: Alignment.center,
-//           children: [
-//             // Radar Animation Circles
-//             for (double radius in [100, 140, 180])
-//               AnimatedBuilder(
-//                 animation: _controller,
-//                 builder: (context, child) {
-//                   return Container(
-//                     width: radius,
-//                     height: radius,
-//                     decoration: BoxDecoration(
-//                       shape: BoxShape.circle,
-//                       color: Colors.blue.withOpacity(
-//                         (1 - _controller.value).clamp(0, 1),
-//                       ),
-//                     ),
-//                   );
-//                 },
-//               ),
-//             Column(
-//               mainAxisAlignment: MainAxisAlignment.center,
-//               children: [
-//                 SizedBox(height: 120,),
-//                 Icon(
-//                   Icons.video_call,
-//                   size: 50,
-//                   color: Theme.of(context).primaryColor,
-//                 ),
-//                 // const CircularProgressIndicator(),
-//                 const SizedBox(height: 100),
-//                 const Text(
-//                   'Searching available Doctor...',
-//                   style: TextStyle(
-//                     fontSize: 16,
-//                     fontWeight: FontWeight.bold,
-//                   ),
-//                 ),
-//               ],
-//             ),
-//             // ),
-//           ],
-//         ),
-//       ),
-//     ),
-//   );
-// }

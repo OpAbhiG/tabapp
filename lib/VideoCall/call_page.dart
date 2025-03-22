@@ -9,6 +9,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'dart:convert';
+import 'package:intl/intl.dart';
 
 class SensorApiService {
   final String baseUrl;
@@ -219,77 +220,161 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
     String frequencyString = frequencyValue.toString();
     return frequencyMapping[frequencyString] ?? 'Unknown Frequency';
   }
+  final dateFormat = DateFormat('dd-MM-yyyy');
+  final timeFormat = DateFormat('HH:mm');
+  final currentDate = DateTime.now();
 
   Future<void> _generatePrintPreview() async {
     final pdf = pw.Document();
+
     pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a5,
+        maxPages: 10,  // Support multiple pages for long prescriptions
         build: (pw.Context context) {
-          return pw.Container(
-            padding: const pw.EdgeInsets.all(15),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                // Title
-                pw.Center(
-                  child: pw.Text(
-                    'PRESCRIPTION',
-                    style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
-                  ),
-                ),
-                pw.Divider(thickness: 2),
-                pw.SizedBox(height: 15),
+          return [
+            // Header - Reduced font sizes
+            pw.Center(
+              child: pw.Text(
+                'BharatTeleClinic',
+                style: pw.TextStyle(fontSize: 30, fontWeight: pw.FontWeight.bold),
+              ),
+            ),
+            pw.Center(
+              child: pw.Text(
+                'BharatTelePharma Pvt.Ltd.',
+                style: pw.TextStyle(fontSize: 25),
+              ),
+            ),
 
-                // Doctor Details
-                pw.Text('Doctor: $doctorName', style: const pw.TextStyle(fontSize: 16)),
-                pw.Text('License No: $licenseNumber', style: const pw.TextStyle(fontSize: 14)),
-                pw.Text('Generated on: ${DateTime.now()}',style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey)),
+            pw.SizedBox(height: 2),
+            pw.Divider(thickness: 3),
+            pw.SizedBox(height: 2),
 
-                pw.SizedBox(height: 10),
+            // Doctor Details - Reduced font sizes and improved formatting
+            pw.Center(child:  pw.Text('Doctor: $doctorName', style: pw.TextStyle(fontSize: 20)), ),
+            pw.Center(child:   pw.Text('License No: $licenseNumber', style: pw.TextStyle(fontSize: 20)), ),
 
-                // Prescription Table
-                pw.Table(
-                  border: pw.TableBorder.all(),
-                  columnWidths: {
-                    0: const pw.FlexColumnWidth(2),
-                    1: const pw.FlexColumnWidth(1),
-                    2: const pw.FlexColumnWidth(1),
-                    3: const pw.FlexColumnWidth(2),
-                    4: const pw.FlexColumnWidth(2),
-                  },
+            pw.SizedBox(height: 2),
+            pw.Divider(thickness:3),
+            pw.SizedBox(height: 2),
+
+
+            pw.Center(child:   pw.Text(
+              'Date: ${dateFormat.format(currentDate)} | Time: ${timeFormat.format(currentDate)}',
+              style: pw.TextStyle(fontSize: 20),
+
+            ), ),
+            pw.SizedBox(height: 2),
+            pw.Divider(thickness: 3),
+            pw.SizedBox(height: 2),
+
+            // Prescription Header - Reduced font size
+            pw.Text(
+              'Medications',
+              style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 3),
+
+            // Loop through prescriptions with optimized formatting
+            ...prescriptions.map(
+                  (prescription) => pw.Container(
+                margin: const pw.EdgeInsets.only(bottom: 3),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    // Table Headers
-                    pw.TableRow(
-                      decoration: const pw.BoxDecoration(color: PdfColors.grey300),
-                      children: [
-                        _tableCell('Medicine', bold: true),
-                        _tableCell('Dosage', bold: true),
-                        _tableCell('Duration', bold: true),
-                        _tableCell('Frequency', bold: true),
-                        _tableCell('Instruction', bold: true),
-                      ],
+                    pw.Text(
+                      'Drug: ${prescription['drug_name']}',
+                      style: pw.TextStyle(fontSize: 20, ),
                     ),
-                    // Prescription Data
-                    ...prescriptions.map(
-                          (prescription) => pw.TableRow(
-                        children: [
-                          _tableCell(prescription['drug_name']),
-                          _tableCell(prescription['dosage']),
-                          _tableCell(prescription['duration']),
-                          _tableCell(getFrequencyPattern(prescription['frequency'])), // Updated line
-                          _tableCell(prescription['instruction']),
-                        ],
-                      ),
+                    pw.Text(
+                      'Dosage: ${prescription['dosage'] ?? ''} ${prescription['unit'] ?? ''}',
+                      style: pw.TextStyle(fontSize: 20),
+                      // Use maxLines and soft wrap to handle long texts
+                      maxLines: 2,
+                    ),
+                    pw.Text(
+                      'Duration: ${prescription['duration'] ?? ''} days',
+                      style: pw.TextStyle(fontSize: 20),
+                    ),
+                    pw.Text(
+                      'Frequency: ${getFrequencyPattern(prescription['frequency'])}',
+                      style: pw.TextStyle(fontSize: 20),
+                    ),
+                    pw.Text(
+                      'Instruction: ${prescription['instruction']}',
+                      style: pw.TextStyle(fontSize: 20),
+                      // Use maxLines and soft wrap to handle long texts
+                      maxLines: 3,
+                    ),
+                    pw.Text(
+                      'Notes: ${prescription['notes']}',
+                      style: pw.TextStyle(fontSize: 20),
+                      maxLines: 10,
+                    ),
+                    pw.Divider(thickness: 2),
+                  ],
+                ),
+              ),
+            ),
+
+            // pw.SizedBox(height: 5),
+
+            // Signature - Right-aligned with smaller dimensions
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.end,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  children: [
+                    pw.Container(
+                      // height: 15,
+                      // width: 60,
+                      child: pw.Text('Signature', style: pw.TextStyle(fontSize: 15)),
+                    ),
+                    pw.Text(
+                      "Dr.$doctorName",
+                      style: pw.TextStyle(fontSize: 15),
                     ),
                   ],
                 ),
-
-
-
               ],
             ),
-          );
+
+            pw.SizedBox(height: 2),
+            pw.Divider(thickness: 3),
+            pw.SizedBox(height: 2),
+
+            // Disclaimer with smaller font and word wrapping
+            pw.Center(
+              child: pw.Text(
+                "This prescription is issued based on a teleconsultation. Consult your doctor in case of adverse reactions.",
+                style: pw.TextStyle(fontSize: 18),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+
+            pw.SizedBox(height: 5),
+
+            // Footer with reduced font size
+            pw.Center(
+              child: pw.Text(
+                "THANK YOU! VISIT AGAIN!",
+                style: pw.TextStyle(fontSize: 25, fontWeight: pw.FontWeight.bold),
+                textAlign: pw.TextAlign.center,
+
+              ),
+            ),
+            pw.SizedBox(height: 5),
+            pw.Center(
+              child: pw.Text(
+                "hello@bharatteleclinic.co | +919581870076",
+                style: pw.TextStyle(fontSize: 18),
+                textAlign: pw.TextAlign.center,
+
+              ),
+            ),
+          ];
         },
       ),
     );
@@ -297,17 +382,8 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
     // Show Print Preview
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-    );
-  }
-
-// Helper function for table cell styling
-  pw.Widget _tableCell(String text, {bool bold = false}) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.all(8),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(fontSize: 12, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal),
-      ),
+      // Force using our custom format
+      // format: thermalPrinterFormat,
     );
   }
 
@@ -369,7 +445,7 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
                     Text(
                       'Doctor: $doctorName',
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 13,
                         // fontWeight: FontWeight.bold,
                         color: Color(0xFF243B6D),
                       ),
@@ -440,7 +516,7 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
                           ),
                         const SizedBox(height: 8),
                         Text(
-                          'Created: ${prescription['created_at'] ?? ''}',
+                          'Created: ${dateFormat.format(currentDate)} ${timeFormat.format(currentDate)}',
                           style: const TextStyle(
                             fontSize: 14,
                             color: Colors.grey,
@@ -629,13 +705,27 @@ class _CallPageState extends State<CallPage> {
 
         // ✅ Floating Hang-Up Button
         Positioned(
-          bottom: 180,
-          left: MediaQuery.of(context).size.width / 2 - 30,
-          right: MediaQuery.of(context).size.width / 2 - 30,
-          child: FloatingActionButton(
-            backgroundColor: Colors.white,
-            onPressed: ShowPrescriptionDialog,
-            child: const Icon(Icons.print, color: Color(0xFF243B6D)),
+          bottom: 5,
+          left: MediaQuery.of(context).size.width / 2 - 35, // Centering horizontally
+          child: Container(
+            width: 70, // Ensuring a perfect circle
+            height: 70, // Ensuring a perfect circle
+            decoration: BoxDecoration(
+              shape: BoxShape.circle, // Making it circular
+              color: Colors.white, // Background color
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: Icon(Icons.print, color: Color(0xFF243B6D)),
+              onPressed: ShowPrescriptionDialog,
+            ),
           ),
         ),
       ],

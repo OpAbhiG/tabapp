@@ -553,30 +553,30 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           if (mounted) {
             await checkDoctorAvailability(token, widget.speciality);  // Call availability check
 
-////////////////////////////this payment screen open
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => PaymentScreen(
-                name: widget.name,
-                phoneNumber: widget.phoneNumber,
-                token: token,
-                price:widget.price,
-                specialityId: widget.speciality,
-
-              )),
-            );
-//
+////////////////////////////this payment screen open QR code
 //             Navigator.pushReplacement(
 //               context,
-//               MaterialPageRoute(builder: (context) => pay(
+//               MaterialPageRoute(builder: (context) => PaymentScreen(
 //                 name: widget.name,
 //                 phoneNumber: widget.phoneNumber,
 //                 token: token,
 //                 price:widget.price,
-//                 // specialityId: widget.speciality,
+//                 specialityId: widget.speciality,
 //
-//               ),),
+//               )),
 //             );
+//simulation code
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => pay(
+                name: widget.name,
+                phoneNumber: widget.phoneNumber,
+                token: token,
+                price:widget.price,
+                // specialityId: widget.speciality,
+
+              ),),
+            );
           }
         } else {
           showSnackbar("OTP verification failed: Missing access token or token_id");
@@ -787,7 +787,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
 
 
-
 // **Screen for when no doctor is available**
 class NoDoctorScreen extends StatefulWidget {
   @override
@@ -829,7 +828,8 @@ class _NoDoctorScreenState extends State<NoDoctorScreen> {
           children: [
             const Text("Currently, this specialty doctor is not available.", style: TextStyle(fontSize: 18)),
             const SizedBox(height: 10),
-            const Text("Our backend team will connect with you.", style: TextStyle(fontSize: 16, color: Colors.grey)),
+            const Text("We apologize for the delay.\nWould you like to wait a little longer or connect with our support team for assistance?",
+            style: TextStyle(fontSize: 16, color: Colors.grey)),
             const SizedBox(height: 20),
             Text("Redirecting in $countdown seconds...", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],

@@ -675,7 +675,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> {
         width: 165,
         margin: const EdgeInsets.only(right: 15),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.blue, width: 2),
+          border: Border.all(color: Colors.blue, width: 1),
           borderRadius: BorderRadius.circular(25),
         ),
         child: Column(
@@ -693,7 +693,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> {
                 fit: BoxFit.cover,
               ),
             ),
-            const Divider(color: Colors.blue, thickness: 2, height: 0),
+            const Divider(color: Colors.blue, thickness: 1, height: 0),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 0),
               child: Column(
