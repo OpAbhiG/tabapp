@@ -34,11 +34,14 @@ class _ImageCarouselState extends State<ImageCarousel> {
             double buttonWidth = isLandscape ? 240 : 280;
 
             return Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 0),
+
+
+
                 child: Column(
+
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
+
                   children: [
                     // Logo at the Top
                     Image.asset(
@@ -46,7 +49,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
                       height: logoHeight,
                       fit: BoxFit.contain,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 30),
 
                     // Image Carousel
                     SizedBox(
@@ -55,7 +58,6 @@ class _ImageCarouselState extends State<ImageCarousel> {
                       child: CarouselSlider(
                         items: images.map((item) {
                           return ClipRRect(
-                            borderRadius: BorderRadius.circular(0),
                             child: Image.asset(
                               item,
                               fit: BoxFit.cover,
@@ -67,18 +69,13 @@ class _ImageCarouselState extends State<ImageCarousel> {
                           height: imageHeight,
                           enlargeCenterPage: true,
                           autoPlay: true,
-                          autoPlayInterval: const Duration(seconds: 3),
-                          autoPlayAnimationDuration: const Duration(milliseconds: 1200),
+                          autoPlayInterval: const Duration(seconds: 5),
+                          autoPlayAnimationDuration: const Duration(milliseconds: 500),
                           viewportFraction: 1,
-                          onPageChanged: (index, reason) {
-                            setState(() {
-                              // _currentIndex = index;
-                            });
-                          },
                         ),
                       ),
                     ),
-                    const SizedBox(height: 80),
+                    const SizedBox(height: 20),
 
                     // Get Started Button
                     SizedBox(
@@ -95,21 +92,20 @@ class _ImageCarouselState extends State<ImageCarousel> {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(25),
                           ),
                           backgroundColor: Colors.red,
                         ),
                         child: const Center(
                           child: Text(
                             "GET STARTED",
-                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white,fontSize: 20),
                           ),
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
             );
           },
         ),

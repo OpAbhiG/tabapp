@@ -390,19 +390,33 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       final Uri apiUrl = Uri.parse("$baseapi/tab/is_speciality_doctors_available");
 
       Map<String, String> specialityMapping = {
-        "General Physician": "1",              // Given in your example
-        "Dermatologist": "2",          // Given in your example
-        "Dentist": "3",                // Given in your example
-        "General Practitioner": "5",   // Inferred from "shoaib ab" and "akbar gulam" with MBBS
-        "Pediatrician": "6",           // Inferred as a possibility for "Spider Women"
-        "Gynecologist": "7",           // Inferred as a possibility for "abhishek gholap"
-        "Cardiologist": "8",           // Inferred for "Aftab Bhai" with 100 years experience
-        "Orthopedic Surgeon": "9",     // Inferred as a possibility for "NewSonam gupta"
-        "Neurologist": "10",           // Inferred as a possibility for "Jethalal Gada"
+        "General Physician": "1",
+        "Gynecologist": "2",
+        "Sexologist": "3",
+        "Dermatologist": "4",
+        "Psychiatrist": "5",
+        "Gastroenterologist": "6",
+        "Pediatrician": "7",
+        "Urologist": "8",
+        "ENT Specialist": "9",
+        "Orthopedist": "10",
+        "Cardiologist": "11",
+        "Pulmonologist": "12",
+        "Neurologist": "13",
+        "Endocrinologist": "14",
+        "Nephrologist": "15",
+        "Psychologist": "16",
+        "Nutritionist/Dietitian": "17",
+        "Physiotherapist": "18",
+        "Oncologist (Consultation Only)": "19",
+        "Ophthalmologist": "20",
+        "Dentist": "21",
+        "Trichologist": "22"
+
       };
 
       final Map<String, String> requestBody = {
-        "speciality_id": specialityMapping[specialityId] ?? "1",
+        "speciality_id": specialityMapping[specialityId]!,
       };
 
       print("API URL: $apiUrl");
@@ -572,7 +586,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 name: widget.name,
                 phoneNumber: widget.phoneNumber,
                 token: token,
-                price:widget.price,
+                price:widget.price, specialityId: widget.speciality,
                 // specialityId: widget.speciality,
 
               ),),

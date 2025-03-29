@@ -20,8 +20,8 @@ class TopSection extends StatelessWidget {
               Expanded(
 
                 child: Wrap(
-                  spacing: isSmallScreen ? 4 : 8, // Adjust spacing
-                  runSpacing: 4, // Prevent overflow on smaller screens
+                  spacing: isSmallScreen ? 6 : 10, // Adjust spacing
+                  runSpacing: 6, // Prevent overflow on smaller screens
                   children: [
                     _buildIconText(Icons.verified, "Verified Doctors", Colors.blue, isSmallScreen),
                     _buildIconText(Icons.receipt, "Digital Prescription", Colors.red, isSmallScreen),
@@ -33,7 +33,7 @@ class TopSection extends StatelessWidget {
               // Right Section - Logo (Scales for Different Screens)
               Image.asset(
                 "assets/btclogo.png", // Replace with your logo asset
-                height: isSmallScreen ? 50 : 70, // Scales based on screen size
+                height: isSmallScreen ? 60 : 80, // Scales based on screen size
                 fit: BoxFit.contain,
               ),
             ],
@@ -48,12 +48,12 @@ class TopSection extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min, // Prevents unnecessary expansion
       children: [
-        Icon(icon, size: isSmallScreen ? 14 : 16, color: color),
-        SizedBox(width: isSmallScreen ? 2 : 4),
+        Icon(icon, size: isSmallScreen ? 17 : 19, color: color),
+        SizedBox(width: isSmallScreen ? 4 : 8),
         Text(
           text,
           style: TextStyle(
-            fontSize: isSmallScreen ? 10 : 12, // Adjusts text size
+            fontSize: isSmallScreen ? 13 : 15, // Adjusts text size
             fontWeight: FontWeight.bold,
           ),
         ),

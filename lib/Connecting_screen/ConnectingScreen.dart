@@ -148,18 +148,31 @@ class _ConnectingScreenState extends State<ConnectingScreen>
 
       // request.fields['speciality_id'] = widget.speciality;
       Map<String, String> specialityMapping = {
-        "General Physician": "1",              // Given in your example
-        "Dermatologist": "2",          // Given in your example
-        "Dentist": "3",                // Given in your example
-        "General Practitioner": "5",   // Inferred from "shoaib ab" and "akbar gulam" with MBBS
-        "Pediatrician": "6",           // Inferred as a possibility for "Spider Women"
-        "Gynecologist": "7",           // Inferred as a possibility for "abhishek gholap"
-        "Cardiologist": "8",           // Inferred for "Aftab Bhai" with 100 years experience
-        "Orthopedic Surgeon": "9",     // Inferred as a possibility for "NewSonam gupta"
-        "Neurologist": "10",           // Inferred as a possibility for "Jethalal Gada"
+        "General Physician": "1",
+        "Gynecologist": "2",
+        "Sexologist": "3",
+        "Dermatologist": "4",
+        "Psychiatrist": "5",
+        "Gastroenterologist": "6",
+        "Pediatrician": "7",
+        "Urologist": "8",
+        "ENT Specialist": "9",
+        "Orthopedist": "10",
+        "Cardiologist": "11",
+        "Pulmonologist": "12",
+        "Neurologist": "13",
+        "Endocrinologist": "14",
+        "Nephrologist": "15",
+        "Psychologist": "16",
+        "Nutritionist/Dietitian": "17",
+        "Physiotherapist": "18",
+        "Oncologist (Consultation Only)": "19",
+        "Ophthalmologist": "20",
+        "Dentist": "21",
+        "Trichologist": "22"
       };
 
-      String mappedSpecialityId = specialityMapping[widget.speciality] ?? "1";
+      String mappedSpecialityId = specialityMapping[widget.speciality]!;
       request.fields['speciality_id'] = mappedSpecialityId;
 
       request.headers['Authorization'] = 'Bearer ${widget.token}';
@@ -192,14 +205,27 @@ class _ConnectingScreenState extends State<ConnectingScreen>
   }
   Map<String, String> specialityMapping = {
     "General Physician": "1",
-    "Dermatologist": "2",
-    "Dentist": "3",
-    "General Practitioner": "5",
-    "Pediatrician": "6",
-    "Gynecologist": "7",
-    "Cardiologist": "8",
-    "Orthopedic Surgeon": "9",
-    "Neurologist": "10",
+    "Gynecologist": "2",
+    "Sexologist": "3",
+    "Dermatologist": "4",
+    "Psychiatrist": "5",
+    "Gastroenterologist": "6",
+    "Pediatrician": "7",
+    "Urologist": "8",
+    "ENT Specialist": "9",
+    "Orthopedist": "10",
+    "Cardiologist": "11",
+    "Pulmonologist": "12",
+    "Neurologist": "13",
+    "Endocrinologist": "14",
+    "Nephrologist": "15",
+    "Psychologist": "16",
+    "Nutritionist/Dietitian": "17",
+    "Physiotherapist": "18",
+    "Oncologist (Consultation Only)": "19",
+    "Ophthalmologist": "20",
+    "Dentist": "21",
+    "Trichologist": "22"
   };
 
 
@@ -225,7 +251,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
       request.fields['longitude'] = position.longitude.toString();
 
       request.fields['speciality'] = widget.speciality;
-      String mappedSpecialityId = specialityMapping[widget.speciality] ?? "1";
+      String mappedSpecialityId = specialityMapping[widget.speciality]!;
       request.fields['speciality_id'] = mappedSpecialityId;
       // request.fields['speciality'] = '1';
 
@@ -476,7 +502,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
                   // Stethoscope Image - Exactly centered in the radar
                   Center(
                     child: Image.asset(
-                      'assets/doctor/stethoscope.png',
+                      'assets/stethoscope.png',
                       width: screenWidth * 0.15,
                     ),
                   ),
@@ -521,7 +547,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
                       for (int i = 0; i < quotes.length; i++)
                         AnimatedOpacity(
                           opacity: _quoteIndex == i ? 1.0 : 0.0,
-                          duration: Duration(milliseconds: 400),
+                          duration: Duration(milliseconds: 800),
                           child: Container(
                             width: screenWidth * 0.8,
                             child: Text(
