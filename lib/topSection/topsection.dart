@@ -48,12 +48,12 @@ class TopSection extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min, // Prevents unnecessary expansion
       children: [
-        Icon(icon, size: isSmallScreen ? 17 : 19, color: color),
+        Icon(icon, size: isSmallScreen ? 14 : 16, color: color),
         SizedBox(width: isSmallScreen ? 4 : 8),
         Text(
           text,
           style: TextStyle(
-            fontSize: isSmallScreen ? 13 : 15, // Adjusts text size
+            fontSize: isSmallScreen ? 10 : 12, // Adjusts text size
             fontWeight: FontWeight.bold,
           ),
         ),
