@@ -633,20 +633,20 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                     const TopSection(),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                     const Text(
                       "25+ Specialities",
-                      style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 5),
                     const Text(
                       "Consult with top doctors across specialities",
-                      style: TextStyle(fontSize: 15, color: Colors.grey),
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                     specialities.isEmpty
                         ? const Center(child: Text("No specialities available"))
                         : Stack(
@@ -739,17 +739,17 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                       ],
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                     const Text(
                       "Common Health Concerns",
-                      style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 5),
                     const Text(
                       "Consult a doctor online for any health issue",
-                      style: TextStyle(fontSize: 15, color: Colors.grey),
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
 
                     specialities.isEmpty
                         ? const Center(child: Text("No concerns available"))
@@ -818,7 +818,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
         width: 250,
         margin: const EdgeInsets.only(right: 15),
         decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFF5856D6), width: 2),
+          border: Border.all(color: const Color(0xFF5856D6), width: 2.5),
           borderRadius: BorderRadius.circular(25),
         ),
         child: Column(
@@ -826,8 +826,8 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(25),
-                topRight: Radius.circular(25),
+                topLeft: Radius.circular(23),
+                topRight: Radius.circular(23),
               ),
               child: Image.asset(
                 specialityImage,
@@ -836,7 +836,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                 fit: BoxFit.cover,
               ),
             ),
-            const Divider(color: Color(0xFF5856D6), thickness: 2, height: 0),
+            const Divider(color: Color(0xFF5856D6), thickness: 2.5, height: 0),
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
