@@ -496,6 +496,7 @@ class _PaymentScreenState extends State<pay> {
       print('URL: $url');
       print('Fields: ${request.fields}');
 
+
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
 

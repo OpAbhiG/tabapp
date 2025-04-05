@@ -801,6 +801,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 // **Screen for when no doctor is available**
 class NoDoctorScreen extends StatefulWidget {
   @override

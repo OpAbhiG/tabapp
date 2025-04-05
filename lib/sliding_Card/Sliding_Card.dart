@@ -587,17 +587,38 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
     super.dispose();
   }
 
+  // Future<List<Map<String, dynamic>>> fetchSpecialities() async {
+  //   final response = await http.get(Uri.parse("$baseapi/tab/tb-speciality"));
+  //
+  //   if (response.statusCode == 200) {
+  //     print(jsonDecode(response.body));
+  //     print("Response Status Code: ${response.statusCode}");
+  //     print("Response Body: ${response.body}");
+  //
+  //     final data = json.decode(response.body);
+  //     return List<Map<String, dynamic>>.from(data["specialities"]);
+  //   } else {
+  //     throw Exception("Failed to load specialities");
+  //   }
+  // }
   Future<List<Map<String, dynamic>>> fetchSpecialities() async {
-    final response = await http.get(Uri.parse("$baseapi/tab/tb-speciality"));
+    try {
+      final response = await http.get(Uri.parse("$baseapi/tab/tb-speciality"));
 
-    if (response.statusCode == 200) {
-      print(jsonDecode(response.body));
-      print("Response Status Code: ${response.statusCode}");
-      print("Response Body: ${response.body}");
+      if (response.statusCode == 200) {
 
-      final data = json.decode(response.body);
-      return List<Map<String, dynamic>>.from(data["specialities"]);
-    } else {
+        print(jsonDecode(response.body));
+        print("Response Status Code: ${response.statusCode}");
+        print("Response Body: ${response.body}");
+
+        final decodedData = json.decode(response.body);
+        if (decodedData != null && decodedData["specialities"] is List) {
+          return List<Map<String, dynamic>>.from(decodedData["specialities"]);
+        }
+      }
+      throw Exception("Invalid data format");
+    } catch (e) {
+      debugPrint("Error fetching specialities: $e");
       throw Exception("Failed to load specialities");
     }
   }
@@ -653,17 +674,17 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                       children: [
                         SizedBox(
                           height: 480,
-                          child: ListView(
+                          child:ListView.builder(
                             scrollDirection: Axis.horizontal,
-                            children: specialities.map((data) =>
-                            !_hasShownHint
-                                ? SlideTransition(
-                                position: _slideAnimation,
-                                child: _buildSpecialityCard(context, data)
-                            )
-                                : _buildSpecialityCard(context, data)
-                            ).toList(),
-                          ),
+                            itemCount: specialities.length,
+                            itemBuilder: (context, index) => _hasShownHint
+                                ? _buildSpecialityCard(context, specialities[index])
+                                : SlideTransition(
+                              position: _slideAnimation,
+                              child: _buildSpecialityCard(context, specialities[index]),
+                            ),
+                          )
+
                         ),
                         // Overlay hint text
                         if (!_hasShownHint)

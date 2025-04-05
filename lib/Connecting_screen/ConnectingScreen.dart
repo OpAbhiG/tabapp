@@ -383,7 +383,6 @@ class _ConnectingScreenState extends State<ConnectingScreen>
 
 
   ///without waiting dr i start vcall
-
   Future<void> _checkDoctorResponse(String meetingId) async {
     try {
       var response = await http.get(
