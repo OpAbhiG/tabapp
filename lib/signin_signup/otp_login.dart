@@ -586,8 +586,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 name: widget.name,
                 phoneNumber: widget.phoneNumber,
                 token: token,
-                price:widget.price, specialityId: widget.speciality,
-                // specialityId: widget.speciality,
+                price:widget.price,
+
 
               ),),
             );
@@ -645,7 +645,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 children: [
                   const Text("Login", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,color: Colors.black)),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(Icons.close,color: Colors.red,),
                     onPressed: () {
                       showDialog(
                         context: context,
@@ -748,18 +748,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // TextButton(
-                  //   onPressed: () {},
-                  //   child: const Text("Get via Call", style: TextStyle(color: Colors.indigo,fontSize: 12)),
-                  //
-                  // ),
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text("Get via Call", style: TextStyle(color: Colors.indigo,fontSize: 12)),
+
+                  ),
                   TextButton(
                     onPressed: canResendOtp ? resendOtp : null,
                     child: Text(
                       canResendOtp ? "Resend OTP" : "Resend OTP $countdownSeconds sec",
                       style: TextStyle(
                         color: canResendOtp ? Colors.blue : Colors.grey,fontSize: 12
-                        // decoration: TextDecoration.underline, // Adds underline
                       ),
                     ),
                   )
