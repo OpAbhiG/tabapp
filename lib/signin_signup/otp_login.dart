@@ -389,34 +389,34 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     try {
       final Uri apiUrl = Uri.parse("$baseapi/tab/is_speciality_doctors_available");
 
-      Map<String, String> specialityMapping = {
+      Map<String?, String?> specialityMapping = {
         "General Physician": "1",
-        "Gynecologist": "2",
-        "Sexologist": "3",
-        "Dermatologist": "4",
+        " Gynecologist": "2",
+        "Dermatologist": "3",
+        "Sexologist": "4",
         "Psychiatrist": "5",
         "Gastroenterologist": "6",
         "Pediatrician": "7",
-        "Urologist": "8",
-        "ENT Specialist": "9",
+        "ENT Specialist": "8",
+        "Urologist": "9",
         "Orthopedist": "10",
-        "Cardiologist": "11",
-        "Pulmonologist": "12",
-        "Neurologist": "13",
-        "Endocrinologist": "14",
-        "Nephrologist": "15",
-        "Psychologist": "16",
-        "Nutritionist/Dietitian": "17",
-        "Physiotherapist": "18",
-        "Oncologist (Consultation Only)": "19",
-        "Ophthalmologist": "20",
-        "Dentist": "21",
-        "Trichologist": "22"
-
+        "Neurologist": "11",
+        "Cardiologist": "12",
+        "Nutritionist/Dietitian": "13",
+        "Diabetology": "14",
+        "Eye & Vision": "15",
+        "Dentist": "16",
+        "Pulmonologist": "17",
+        "Ayurveda": "18",
+        "Homeopathy": "19",
+        "Cancer": "20",
+        "Physiotherapist": "21",
+        "Nephrologist": "22",
+        "Trichologist": "23",
       };
 
-      final Map<String, String> requestBody = {
-        "speciality_id": specialityMapping[specialityId]!,
+      final Map<String?, String?> requestBody = {
+        "speciality_id": specialityMapping[specialityId],
       };
 
       print("API URL: $apiUrl");
@@ -461,7 +461,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         showSnackbar("Error: ${data["message"] ?? "Invalid response"}");
       }
     } catch (e) {
-      showSnackbar("Error checking doctor availability: ${e.toString()}");
+      showSnackbar("checking doctor availability: ${e.toString()}");
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          navigateToNoDoctorScreen();
+        }
+      });
+
     }
   }
 
@@ -846,17 +852,46 @@ class _NoDoctorScreenState extends State<NoDoctorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("Currently, this specialty doctor is not available.", style: TextStyle(fontSize: 18)),
-            const SizedBox(height: 10),
-            const Text("We apologize for the delay.\nWould you like to wait a little longer or connect with our support team for assistance?",
-            style: TextStyle(fontSize: 16, color: Colors.grey)),
-            const SizedBox(height: 20),
-            Text("Redirecting in $countdown seconds...", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.info_outline, color: Colors.blueAccent, size: 60),
+              const SizedBox(height: 20),
+              const Text(
+                "Doctor Unavailable",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "Currently, this specialty doctor is not available.\n\n"
+                    "We apologize for the inconvenience. You can wait a moment or contact our support team for assistance.",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 30),
+              Text(
+                "Redirecting in $countdown seconds...",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black54,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

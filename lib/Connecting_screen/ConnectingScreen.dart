@@ -45,35 +45,36 @@ class _ConnectingScreenState extends State<ConnectingScreen>
   String? sessionId = '';
   String? meetingId = '';
   bool isExpired = false;
-  int waitButtonClicks = 0;
+  // int waitButtonClicks = 0;
   DateTime? lastWaitClickTime;
-  final int maxWaitAttempts = 5;
+  // final int maxWaitAttempts = 5;
   Timer? statusCheckTimer;
 
   // Map to track status states
-  Map<String, String> specialityMapping = {
+  Map<String?, String?> specialityMapping = {
     "General Physician": "1",
-    "Gynecologist": "2",
-    "Sexologist": "3",
-    "Dermatologist": "4",
+    " Gynecologist": "2",
+    "Dermatologist": "3",
+    "Sexologist": "4",
     "Psychiatrist": "5",
     "Gastroenterologist": "6",
     "Pediatrician": "7",
-    "Urologist": "8",
-    "ENT Specialist": "9",
+    "ENT Specialist": "8",
+    "Urologist": "9",
     "Orthopedist": "10",
-    "Cardiologist": "11",
-    "Pulmonologist": "12",
-    "Neurologist": "13",
-    "Endocrinologist": "14",
-    "Nephrologist": "15",
-    "Psychologist": "16",
-    "Nutritionist/Dietitian": "17",
-    "Physiotherapist": "18",
-    "Oncologist (Consultation Only)": "19",
-    "Ophthalmologist": "20",
-    "Dentist": "21",
-    "Trichologist": "22"
+    "Neurologist": "11",
+    "Cardiologist": "12",
+    "Nutritionist/Dietitian": "13",
+    "Diabetology": "14",
+    "Eye & Vision": "15",
+    "Dentist": "16",
+    "Pulmonologist": "17",
+    "Ayurveda": "18",
+    "Homeopathy": "19",
+    "Cancer": "20",
+    "Physiotherapist": "21",
+    "Nephrologist": "22",
+    "Trichologist": "23",
   };
 
   @override
@@ -85,7 +86,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
     )..repeat();
 
     // Start a timer to change the quote every 2 seconds
-    Timer.periodic(Duration(seconds: 2), (timer) {
+    Timer.periodic(const Duration(seconds: 2), (timer) {
       if (mounted) {
         setState(() {
           _quoteIndex = (_quoteIndex + 1) % quotes.length;
@@ -104,7 +105,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
     await _getSessionId(); // This will call _requestConsultation when session ID is ready
 
     // Start periodic status check timer
-    statusCheckTimer = Timer.periodic(Duration(seconds: 5), (timer) {
+    statusCheckTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (sessionId != null && sessionId!.isNotEmpty) {
         _checkConsultationStatus(sessionId!);
       }
@@ -363,7 +364,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
     }
   }
 
-  // this 2nd i need to call
+
   Future<void> _requestConsultation(String sessionId) async {
     if (sessionId.isEmpty) {
       print("[CONSULTATION ERROR] session_id is empty!");
@@ -419,15 +420,15 @@ class _ConnectingScreenState extends State<ConnectingScreen>
       final difference = now.difference(lastWaitClickTime!).inSeconds;
       if (difference >= 300) {
         // Reset count after 5 minutes
-        waitButtonClicks = 0;
+        // waitButtonClicks = 0;
       }
     }
 
     // Update last click time and increment counter
     lastWaitClickTime = now;
-    waitButtonClicks++;
+    // waitButtonClicks++;
 
-    if (waitButtonClicks <= maxWaitAttempts) {
+    if (mounted) {
       // Reset UI
       setState(() {
         isExpired = false; // Hide expired UI
@@ -449,7 +450,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
       });
 
       // Redirect to support after 2 seconds
-      Timer(Duration(seconds: 2), () {
+      Timer(const Duration(seconds: 2), () {
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -502,14 +503,14 @@ class _ConnectingScreenState extends State<ConnectingScreen>
                 left: 20,
                 right: 20,
                 child: Container(
-                  padding: EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.red.withOpacity(0.8),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     errorMessage,
-                    style: TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -526,22 +527,22 @@ class _ConnectingScreenState extends State<ConnectingScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.timer_off,
             size: 80,
             color: Colors.red,
           ),
-          SizedBox(height: 20),
-          Text(
+          const SizedBox(height: 20),
+          const Text(
             "Session Expired",
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 30),
+            padding: const EdgeInsets.symmetric(horizontal: 30),
             child: Text(
               "We apologize for the delay.\nWould you like to wait a little longer or connect with our support team for assistance?",
               textAlign: TextAlign.center,
@@ -551,43 +552,43 @@ class _ConnectingScreenState extends State<ConnectingScreen>
               ),
             ),
           ),
-          SizedBox(height: 40),
+          const SizedBox(height: 40),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
                 onPressed: _handleWaitButtonClick,
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                   backgroundColor: Colors.blue,
                 ),
-                child: Text(
+                child: const Text(
                   "Wait",
                   style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
-              SizedBox(width: 20),
+              const SizedBox(width: 20),
               ElevatedButton(
                 onPressed: _navigateToSupport,
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                   backgroundColor: Colors.green,
                 ),
-                child: Text(
+                child: const Text(
                   "Connect to Support",
                   style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
             ],
           ),
-          SizedBox(height: 20),
-          if (waitButtonClicks > 0)
-            Text(
-              "Wait attempts: $waitButtonClicks/$maxWaitAttempts",
-              style: TextStyle(
-                color: waitButtonClicks >= maxWaitAttempts ? Colors.red : Colors.grey[600],
-              ),
-            ),
+          // const SizedBox(height: 20),
+          // if (waitButtonClicks > 0)
+          //   Text(
+          //     "Wait attempts: $waitButtonClicks/$maxWaitAttempts",
+          //     style: TextStyle(
+          //       color: waitButtonClicks >= maxWaitAttempts ? Colors.red : Colors.grey[600],
+          //     ),
+          //   ),
         ],
       ),
     );
@@ -669,7 +670,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
                   for (int i = 0; i < quotes.length; i++)
                     AnimatedOpacity(
                       opacity: _quoteIndex == i ? 1.0 : 0.0,
-                      duration: Duration(milliseconds: 800),
+                      duration: const Duration(milliseconds: 800),
                       child: Container(
                         width: screenWidth * 0.8,
                         child: Text(
@@ -718,7 +719,7 @@ class _SupportScreenState extends State<SupportScreen> {
     super.initState();
 
     // Start countdown timer
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsRemaining > 0) {
         setState(() {
           _secondsRemaining--;
@@ -753,14 +754,14 @@ class _SupportScreenState extends State<SupportScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.support_agent, size: 80, color: Colors.blue),
-            SizedBox(height: 20),
-            Text(
+            const Icon(Icons.support_agent, size: 80, color: Colors.blue),
+            const SizedBox(height: 20),
+            const Text(
               "Our support team is here to help",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 20),
-            Padding(
+            const SizedBox(height: 20),
+            const Padding(
               padding: EdgeInsets.symmetric(horizontal: 30),
               child: Text(
                 "Please contact our support team for assistance with your consultation",
@@ -775,9 +776,9 @@ class _SupportScreenState extends State<SupportScreen> {
             //   },
             //   child: Text("Contact Support"),
             // ),
-            SizedBox(height: 30),
+            const SizedBox(height: 30),
             Container(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.blue.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
@@ -785,11 +786,11 @@ class _SupportScreenState extends State<SupportScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.timer, color: Colors.blue),
-                  SizedBox(width: 8),
+                  const Icon(Icons.timer, color: Colors.blue),
+                  const SizedBox(width: 8),
                   Text(
                     "Redirecting to home in $_secondsRemaining seconds",
-                    style: TextStyle(fontSize: 16, color: Colors.blue),
+                    style: const TextStyle(fontSize: 16, color: Colors.blue),
                   ),
                 ],
               ),
