@@ -573,19 +573,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           if (mounted) {
             await checkDoctorAvailability(token, widget.speciality);  // Call availability check
 
-////////////////////////////this payment screen open QR code
-//             Navigator.pushReplacement(
-//               context,
-//               MaterialPageRoute(builder: (context) => PaymentScreen(
-//                 name: widget.name,
-//                 phoneNumber: widget.phoneNumber,
-//                 token: token,
-//                 price:widget.price,
-//                 specialityId: widget.speciality,
-//
-//               )),
-//             );
-//simulation code
+//this payment screen open QR code
+
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => pay(
@@ -593,10 +582,22 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 phoneNumber: widget.phoneNumber,
                 token: token,
                 price:widget.price,
+                specialityId: widget.speciality,
 
-
-              ),),
+              )),
             );
+
+//simulation code
+
+//             Navigator.pushReplacement(
+//               context,
+//               MaterialPageRoute(builder: (context) => pay(
+//                 name: widget.name,
+//                 phoneNumber: widget.phoneNumber,
+//                 token: token,
+//                 price:widget.price,
+//               ),),
+//             );
           }
         } else {
           showSnackbar("OTP verification failed: Missing access token or token_id");

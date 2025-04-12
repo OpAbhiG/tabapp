@@ -27,6 +27,7 @@ class ConnectingScreen extends StatefulWidget {
 
 class _ConnectingScreenState extends State<ConnectingScreen>
     with SingleTickerProviderStateMixin {
+
   late AnimationController _controller;
   int _quoteIndex = 0;
   final List<String> quotes = [
@@ -105,7 +106,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
     await _getSessionId(); // This will call _requestConsultation when session ID is ready
 
     // Start periodic status check timer
-    statusCheckTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    statusCheckTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (sessionId != null && sessionId!.isNotEmpty) {
         _checkConsultationStatus(sessionId!);
       }
@@ -670,7 +671,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
                   for (int i = 0; i < quotes.length; i++)
                     AnimatedOpacity(
                       opacity: _quoteIndex == i ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 800),
+                      duration: const Duration(seconds: 1),
                       child: Container(
                         width: screenWidth * 0.8,
                         child: Text(

@@ -88,11 +88,11 @@ class _ImageCarouselState extends State<ImageCarousel> {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          elevation: 6,
+                          elevation: 4,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           backgroundColor: Colors.red,
                         ),

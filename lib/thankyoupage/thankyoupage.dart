@@ -24,7 +24,7 @@ class _Constants {
 
 /// A screen that displays booking confirmation with animated success indicator
 class BookingConfirmationScreen extends StatefulWidget {
-  const BookingConfirmationScreen({super.key});
+  const BookingConfirmationScreen({super.key, required String token});
 
   @override
   State<BookingConfirmationScreen> createState() =>

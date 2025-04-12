@@ -10,7 +10,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
-
+import 'package:PatientTabletApp/thankyoupage/thankyoupage.dart';
+import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
 class SensorApiService {
   final String baseUrl;
   final String token;
@@ -243,7 +244,7 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
             pw.Center(
               child: pw.Text(
                 'BharatTelePharma Pvt.Ltd.',
-                style: pw.TextStyle(fontSize: 25),
+                style: const pw.TextStyle(fontSize: 25),
               ),
             ),
 
@@ -252,8 +253,8 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
             pw.SizedBox(height: 2),
 
             // Doctor Details - Reduced font sizes and improved formatting
-            pw.Center(child:  pw.Text('Doctor: $doctorName', style: pw.TextStyle(fontSize: 20)), ),
-            pw.Center(child:   pw.Text('License No: $licenseNumber', style: pw.TextStyle(fontSize: 20)), ),
+            pw.Center(child:  pw.Text('Doctor: $doctorName', style: const pw.TextStyle(fontSize: 20)), ),
+            pw.Center(child:   pw.Text('License No: $licenseNumber', style: const pw.TextStyle(fontSize: 20)), ),
 
             pw.SizedBox(height: 2),
             pw.Divider(thickness:3),
@@ -262,7 +263,7 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
 
             pw.Center(child:   pw.Text(
               'Date: ${dateFormat.format(currentDate)} | Time: ${timeFormat.format(currentDate)}',
-              style: pw.TextStyle(fontSize: 20),
+              style: const pw.TextStyle(fontSize: 20),
 
             ), ),
             pw.SizedBox(height: 2),
@@ -285,31 +286,31 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
                   children: [
                     pw.Text(
                       'Drug: ${prescription['drug_name']}',
-                      style: pw.TextStyle(fontSize: 20, ),
+                      style: const pw.TextStyle(fontSize: 20, ),
                     ),
                     pw.Text(
                       'Dosage: ${prescription['dosage'] ?? ''} ${prescription['unit'] ?? ''}',
-                      style: pw.TextStyle(fontSize: 20),
+                      style: const pw.TextStyle(fontSize: 20),
                       // Use maxLines and soft wrap to handle long texts
                       maxLines: 2,
                     ),
                     pw.Text(
                       'Duration: ${prescription['duration'] ?? ''} days',
-                      style: pw.TextStyle(fontSize: 20),
+                      style: const pw.TextStyle(fontSize: 20),
                     ),
                     pw.Text(
                       'Frequency: ${getFrequencyPattern(prescription['frequency'])}',
-                      style: pw.TextStyle(fontSize: 20),
+                      style: const pw.TextStyle(fontSize: 20),
                     ),
                     pw.Text(
                       'Instruction: ${prescription['instruction']}',
-                      style: pw.TextStyle(fontSize: 20),
+                      style: const pw.TextStyle(fontSize: 20),
                       // Use maxLines and soft wrap to handle long texts
                       maxLines: 3,
                     ),
                     pw.Text(
                       'Notes: ${prescription['notes']}',
-                      style: pw.TextStyle(fontSize: 20),
+                      style: const pw.TextStyle(fontSize: 20),
                       maxLines: 10,
                     ),
                     pw.Divider(thickness: 2),
@@ -330,11 +331,11 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
                     pw.Container(
                       // height: 15,
                       // width: 60,
-                      child: pw.Text('Signature', style: pw.TextStyle(fontSize: 15)),
+                      child: pw.Text('Signature', style: const pw.TextStyle(fontSize: 15)),
                     ),
                     pw.Text(
                       "Dr.$doctorName",
-                      style: pw.TextStyle(fontSize: 15),
+                      style: const pw.TextStyle(fontSize: 15),
                     ),
                   ],
                 ),
@@ -349,7 +350,7 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
             pw.Center(
               child: pw.Text(
                 "This prescription is issued based on a teleconsultation. Consult your doctor in case of adverse reactions.",
-                style: pw.TextStyle(fontSize: 18),
+                style: const pw.TextStyle(fontSize: 18),
                 textAlign: pw.TextAlign.center,
               ),
             ),
@@ -369,7 +370,7 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
             pw.Center(
               child: pw.Text(
                 "hello@bharatteleclinic.co | +919581870076",
-                style: pw.TextStyle(fontSize: 18),
+                style: const pw.TextStyle(fontSize: 18),
                 textAlign: pw.TextAlign.center,
 
               ),
@@ -435,7 +436,7 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
 
           children: [
-             Card(
+            Card(
               // elevation: 4,
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -665,6 +666,16 @@ class _CallPageState extends State<CallPage> {
     }
 
   }
+  void _navigateToThankYouScreen() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => BookingConfirmationScreen(
+          token: widget.token,
+          // Add any other parameters ThankYouPage needs
+        ),
+      ),
+    );
+  }
 
 
   @override
@@ -690,11 +701,17 @@ class _CallPageState extends State<CallPage> {
             ..topMenuBar.isVisible = true
             ..bottomMenuBar.isVisible = true
             ..avatarBuilder = customAvatarBuilder,
+          events: ZegoUIKitPrebuiltCallEvents(
+            onCallEnd: (ZegoCallEndEvent event, VoidCallback defaultAction) {
+              _apiService.stopSendingData();
+              sensorSubscription.cancel();
+              _navigateToThankYouScreen();
+            },
+          ),
         ),
-
         Positioned(
-          bottom: 80, // Adjust to position above the floating button
-          left: 10, // Center alignment
+          bottom: 80,
+          left: 10,
           right: 10,
           child: SensorDataWidget(
             bloodOxygen: bloodOxygen,
@@ -718,12 +735,12 @@ class _CallPageState extends State<CallPage> {
                   color: Colors.black.withOpacity(0.2),
                   blurRadius: 8,
                   spreadRadius: 2,
-                  offset: Offset(0, 4),
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: IconButton(
-              icon: Icon(Icons.print, color: Color(0xFF243B6D)),
+              icon: const Icon(Icons.print, color: Color(0xFF243B6D)),
               onPressed: ShowPrescriptionDialog,
             ),
           ),

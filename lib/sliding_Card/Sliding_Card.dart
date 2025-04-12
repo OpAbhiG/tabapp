@@ -696,7 +696,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                               child: TweenAnimationBuilder<double>(
                                 duration: const Duration(milliseconds: 800),
                                 tween: Tween(begin: 0.8, end: 1.0),
-                                curve: Curves.elasticOut,
+                                curve: Curves.easeInOutBack,
                                 builder: (context, scale, child) {
                                   return Transform.scale(
                                     scale: scale,
@@ -727,7 +727,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                                             style: TextStyle(
                                               color: Colors.white,
                                               fontSize: 16,
-                                              fontWeight: FontWeight.w500,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                           const SizedBox(width: 8),
@@ -873,6 +873,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                 ),
                 const SizedBox(height: 5),
                 ElevatedButton(
+
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -886,6 +887,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
+                    elevation: 4,
                     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                   ),
                   child: const Text(
