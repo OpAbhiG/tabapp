@@ -325,10 +325,8 @@
 //   }
 // }
 
-//
-// QR code payment
-//
 
+// QR code payment
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -375,22 +373,20 @@ class _PaymentScreenState extends State<pay> {
   Timer? _paymentCheckTimer;
   String? _rezorpay_orderId;
 
-
-
-
-
+  static const String RAZORPAY_KEY_ID = "rzp_live_Erfo0J9KhDydDn";
+  static const String RAZORPAY_KEY_SECRET="ajvN3dobkPGjLmxszHc3QIws";
 
 
   @override
   void initState() {
-  super.initState();
+    super.initState();
 
   }
 
   @override
   void dispose() {
-  _paymentCheckTimer?.cancel();
-  super.dispose();
+    _paymentCheckTimer?.cancel();
+    super.dispose();
   }
 
   void showQRCodeDialog() {
@@ -406,48 +402,43 @@ class _PaymentScreenState extends State<pay> {
             // Make the dialog larger overall
             insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: Padding(
-              padding: const EdgeInsets.all(5),
+              padding: const EdgeInsets.all(20.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(height: 16),
                   const Text(
-                    'BHARAT TELEPHARMA PRIVATE LIMITED',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
+                    'Scan to Pay',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  // const SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Image.network(
                     _qrCodeUrl!,
-                    width: 650,
-                    height: 650,
-                    fit: BoxFit.cover,
-
+                    width: 520,
+                    height:620,
+                    fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        width: 500,
+                        width: 450,
                         height: 500,
                         color: Colors.grey[200],
                         child: const Center(
-
                           child: Text('Failed to load QR code'),
                         ),
                       );
                     },
                   ),
-                  // const SizedBox(height: 16),
-                  // const Text(
-                  //   'Please wait until payment is confirmed',
-                  //   style: TextStyle(fontSize: 20),
-                  //   textAlign: TextAlign.center,
-                  // ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Please wait until payment is confirmed',
+                    style: TextStyle(fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     child: const Text(
                       "Close",
-                      style: TextStyle(color: Colors.red, fontSize: 20),
+                      style: TextStyle(color: Colors.red, fontSize: 16),
                     ),
                   ),
                 ],
@@ -479,7 +470,7 @@ class _PaymentScreenState extends State<pay> {
       // Specialty mapping
       Map<String, String> specialityMapping = {
         "General Physician": "1",
-        "Gynecologist": "2",
+        " Gynecologist": "2",
         "Sexologist": "3",
         "Dermatologist": "4",
         "Psychiatrist": "5",
@@ -548,132 +539,63 @@ class _PaymentScreenState extends State<pay> {
     }
   }
 
-//without pay nav to connecting screen
-  // Future<void> _checkPaymentStatus() async {
-  //   if (_rezorpay_orderId==null && _qrCodeId == null) {
-  //     print('Razorpay Order ID is null, skipping request.');
-  //     return;
-  //   }
-  //
-  //   try {
-  //     final payload = jsonEncode({
-  //       "event": "payment.captured",
-  //       "payload": {
-  //         "payment": {
-  //           "entity": {
-  //             "id":_qrCodeId,
-  //             "order_id": _rezorpay_orderId,
-  //             "amount":widget.price,
-  //             "currency":"INR",
-  //             "status":"capture"
-  //           }
-  //         }
-  //       }
-  //     });
-  //
-  //     const secretKey = "U2c9VpTGa6a@JxpR@JaB@bu";
-  //     final signature = generateSignature(payload, secretKey);
-  //
-  //     final response = await http.post(
-  //       Uri.parse('$baseapi/tab/live-verification'),
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Authorization': 'Bearer ${widget.token}',
-  //         'X-Razorpay-Signature': signature,
-  //       },
-  //       body: payload,
-  //     );
-  //
-  //     print("---- Payment Status Response ----");
-  //     print("---------------------------------");
-  //     print('1 Payment Status Check Response: ${response.statusCode}');
-  //     print('2 Payment Status Check Body: ${response.body}');
-  //     print('3 Sending verification request:');
-  //     print('4 Body: $payload');
-  //     print('5 Headers: ${response.request?.headers}');
-  //     print("---------------------------------");
-  //
-  //     print('Status Code: ${response.statusCode}');
-  //     print('Response Body: ${response.body}');
-  //     print('Headers: ${response.headers}');
-  //
-  //     if (response.statusCode != 500) {
-  //       _paymentCheckTimer?.cancel(); // Stop checking once verified
-  //       _handlePaymentSuccess();
-  //       final data = jsonDecode(response.body);
-  //       if (data['event'] == 'payment.captured') {
-  //         _paymentCheckTimer?.cancel(); // Stop checking once verified
-  //         _paymentId = data['payload']?['payment']?['entity']?['id'];
-  //         _handlePaymentSuccess();
-  //       } else {
-  //         print('Payment status message: ${data['message']}');
-  //       }
-  //     } else {
-  //       print('Error: ${response.statusCode} - ${response.body}');
-  //     }
-  //   } catch (e) {
-  //     print('Exception during payment status check: ${e.toString()}');
-  //   }
-  // }
 
-
-///////////////////////////////////////////////////
-  //hold QR screen
   Future<void> _checkPaymentStatus() async {
-    if (_rezorpay_orderId==null && _qrCodeId == null) {
-      print('Razorpay Order ID is null, skipping request.');
+    if (_qrCodeId == null) {
+      print('QR Code ID is null, skipping request.');
       return;
     }
 
     try {
-      final payload = jsonEncode({
-        "event": "payment.captured",
-        "payload": {
-          "payment": {
-            "entity": {
-              "id":_qrCodeId,
-              "order_id": _rezorpay_orderId,
-              "amount":widget.price,
-              "currency":"INR",
-              "status":"capture"
+      // Direct request to check QR code payment status
+      final response = await http.get(
+        Uri.parse('https://api.razorpay.com/v1/payments/qr_codes/$_qrCodeId'),
+        headers: {
+          // Use basic auth with your API key (only include key_id in client code)
+          //'Authorization': 'Basic ${base64Encode(utf8.encode('$RAZORPAY_KEY_ID:'))}',
+          'Authorization': 'Basic ${base64Encode(utf8.encode('$RAZORPAY_KEY_ID:$RAZORPAY_KEY_SECRET'))}',
+          'Content-Type': 'application/json',
+        },
+      );
+      print('QR Payment status response: ${response.statusCode}');
+      print('QR Payment status body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        // Check if QR code status is closed and close_reason is paid
+        if (data['status'] == 'closed' && data['close_reason'] == 'paid') {
+          _paymentCheckTimer?.cancel();
+          _handlePaymentSuccess();
+          return;
+        }
+
+        // Alternative check for status
+        if (data['status'] == 'paid' || data['status'] == 'used') {
+          // QR code has been paid, now verify the payment details
+          final payments = data['payments'];
+
+          if (payments != null && payments.isNotEmpty) {
+            // Check if any payment is successful
+            for (var payment in payments) {
+              if (payment['status'] == 'captured' || payment['status'] == 'authorized') {
+                _paymentCheckTimer?.cancel();
+                _paymentId = payment['id']; // Store the payment ID
+                _handlePaymentSuccess();
+                return;
+              }
             }
+          } else if (data['status'] == 'used') {
+            // Some UPI payments might show as "used" before payment details appear
+            _paymentCheckTimer?.cancel();
+            _handlePaymentSuccess();
+            return;
           }
         }
-      });
 
-      const secretKey = "U2c9VpTGa6a@JxpR@JaB@bu";
-      final signature = generateSignature(payload, secretKey);
-
-      final response = await http.post(
-        Uri.parse('$baseapi/tab/live-verification'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${widget.token}',
-          'X-Razorpay-Signature': signature,
-        },
-        body: payload,
-      );
-
-      print("---- Payment Status Response ----");
-      print("---------------------------------");
-      print('1 Payment Status Check Response: ${response.statusCode}');
-      print('2 Payment Status Check Body: ${response.body}');
-      print('3 Sending verification request:');
-      print('4 Body: $payload');
-      print('5 Headers: ${response.request?.headers}');
-      print("---------------------------------");
-
-      if (response.statusCode == 200) {  // Only process 200 responses
-        final data = jsonDecode(response.body);
-        if (data['event'] == 'payment.captured') {
-          _paymentCheckTimer?.cancel(); // Stop checking once verified
-          _paymentId = data['payload']?['payment']?['entity']?['id'];
-          _handlePaymentSuccess();
-        } else {
-          print('Payment status message: ${data['message']}');
-        }
+        // If not paid yet, continue polling
       } else {
-        print('Error: ${response.statusCode} - ${response.body}');
+        print('Failed to check QR code status: ${response.statusCode}');
       }
     } catch (e) {
       print('Exception during payment status check: ${e.toString()}');
@@ -684,10 +606,9 @@ class _PaymentScreenState extends State<pay> {
 
 
 
-
   void _handlePaymentSuccess() {
     ScaffoldMessenger.of(context).showSnackBar(
-       SnackBar(content: Text("Payment Successful: $_qrCodeId")),
+      SnackBar(content: Text("Payment Successful: $_qrCodeId")),
     );
 
     Future.delayed(const Duration(seconds: 1), () {
@@ -704,9 +625,9 @@ class _PaymentScreenState extends State<pay> {
   }
 
   void _showErrorMessage(String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-  SnackBar(content: Text(message)),
-  );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override

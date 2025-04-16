@@ -506,7 +506,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.8),
+                    color: Colors.green,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

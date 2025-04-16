@@ -34,6 +34,8 @@ Future<void> requestPermissions() async {
     Permission.location,
     Permission.camera,
     Permission.microphone,
+    Permission.storage,
+    Permission.audio
   ].request();
 
   if (statuses[Permission.location]!.isDenied ||

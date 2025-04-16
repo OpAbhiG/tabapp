@@ -220,6 +220,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                     child: ElevatedButton(
                       onPressed: isLoading ? null : sendOtp,
                       style: ElevatedButton.styleFrom(
+                        elevation: 4,
                         backgroundColor: Colors.red,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -272,6 +273,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                                     Navigator.of(context).pop(); // Go back
                                   },
                                   style: ElevatedButton.styleFrom(
+                                    elevation: 4,
                                     backgroundColor: Colors.red, // **Red background**
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(5),
@@ -574,7 +576,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             await checkDoctorAvailability(token, widget.speciality);  // Call availability check
 
 //this payment screen open QR code
-
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => pay(
@@ -583,21 +584,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 token: token,
                 price:widget.price,
                 specialityId: widget.speciality,
-
               )),
             );
 
-//simulation code
 
-//             Navigator.pushReplacement(
-//               context,
-//               MaterialPageRoute(builder: (context) => pay(
-//                 name: widget.name,
-//                 phoneNumber: widget.phoneNumber,
-//                 token: token,
-//                 price:widget.price,
-//               ),),
-//             );
+
+            //simulation code
+            // Navigator.pushReplacement(
+            //   context,
+            //   MaterialPageRoute(builder: (context) => pay(
+            //     name: widget.name,
+            //     phoneNumber: widget.phoneNumber,
+            //     token: token,
+            //     price:widget.price,
+            //   ),),
+            // );
           }
         } else {
           showSnackbar("OTP verification failed: Missing access token or token_id");
@@ -778,6 +779,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 ElevatedButton(
                   onPressed: isLoading ? null : verifyOtp, // ✅ Calls verifyOtp()
                   style: ElevatedButton.styleFrom(
+                    elevation: 4,
                     backgroundColor: Colors.red,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

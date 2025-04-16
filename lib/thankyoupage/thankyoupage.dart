@@ -9,7 +9,7 @@ class _Constants {
   static const initialDelay = Duration(milliseconds: 300);
 
   //////////////////////
-  static const autoNavigateDelay = Duration(seconds: 10);
+  static const autoNavigateDelay = Duration(seconds: 5);
   /////////////////
 
 
@@ -172,7 +172,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen>
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SizedBox(height: 30,),
+        const SizedBox(height: 30,),
         const SizedBox(height: _Constants.defaultPadding),
         if (_isLoading)
           const CircularProgressIndicator()
@@ -181,7 +181,8 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen>
         const SizedBox(height: _Constants.largeSpacing),
         _buildConfirmationMessage(),
         const SizedBox(height: _Constants.smallSpacing),
-        Text('Redirecting in $_secondsRemaining seconds...',style: TextStyle(fontSize: 20, color: Colors.grey[600])),
+        Text('Redirecting in $_secondsRemaining seconds...',
+            style: TextStyle(fontSize: 20, color: Colors.grey[600])),
         const SizedBox(height: _Constants.largeSpacing),
       ],
     );
