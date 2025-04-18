@@ -52,21 +52,6 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
     _animationController.dispose();
     super.dispose();
   }
-
-  // Future<List<Map<String, dynamic>>> fetchSpecialities() async {
-  //   final response = await http.get(Uri.parse("$baseapi/tab/tb-speciality"));
-  //
-  //   if (response.statusCode == 200) {
-  //     print(jsonDecode(response.body));
-  //     print("Response Status Code: ${response.statusCode}");
-  //     print("Response Body: ${response.body}");
-  //
-  //     final data = json.decode(response.body);
-  //     return List<Map<String, dynamic>>.from(data["specialities"]);
-  //   } else {
-  //     throw Exception("Failed to load specialities");
-  //   }
-  // }
   Future<List<Map<String, dynamic>>> fetchSpecialities() async {
     try {
       final response = await http.get(Uri.parse("$baseapi/tab/tb-speciality"));
@@ -120,14 +105,14 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 10),
+                    // const SizedBox(height: 10),
                     const TopSection(),
                     const SizedBox(height: 10),
                     const Text(
                       "25+ Specialities",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: 5),
+                    // const SizedBox(height: 5),
                     const Text(
                       "Consult with top doctors across specialities",
                       style: TextStyle(fontSize: 12, color: Colors.grey),
@@ -139,7 +124,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                         : Stack(
                       children: [
                         SizedBox(
-                          height: 410,
+                          height: 350,
                           child:ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount: specialities.length,
@@ -229,19 +214,18 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                     const SizedBox(height: 10),
                     const Text(
                       "Common Health Concerns",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: 5),
+                    // const SizedBox(height: 5),
                     const Text(
                       "Consult a doctor online for any health issue",
                       style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                     const SizedBox(height: 10),
-
                     specialities.isEmpty
                         ? const Center(child: Text("No concerns available"))
                         : SizedBox(
-                      height: 180,
+                      height: 150,
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         children: _buildHealthConcerns(specialities),
@@ -302,23 +286,23 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
         );
       },
       child: Container(
-        width: 250,
+        width: 190,
         margin: const EdgeInsets.only(right: 15),
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0xFF5856D6), width: 2.5),
-          borderRadius: BorderRadius.circular(50),
+          borderRadius: BorderRadius.circular(40),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(48),
-                topRight: Radius.circular(48),
+                topLeft: Radius.circular(38),
+                topRight: Radius.circular(38),
               ),
               child: Image.asset(
                 specialityImage,
-                height: 290,
+                height: 240,
                 width: double.infinity,
                 fit: BoxFit.cover,
               ),
@@ -327,15 +311,15 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 10,),
+                // const SizedBox(height: 8,),
                 Text(
                   data['speciality_name'],
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   textAlign: TextAlign.center,
                 ),
                 Text(
                   "₹${data['consultation_fee']}",
-                  style: const TextStyle(fontSize: 14, color: Colors.red, fontWeight: FontWeight.w600),
+                  style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 5),
                 ElevatedButton(
@@ -353,7 +337,6 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
-                    elevation: 4,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -362,7 +345,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                   ),
                   child: const Text(
                     "Consult Now",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600,fontSize: 12),
                   ),
                 ),
               ],
@@ -399,7 +382,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
         );
       },
       child: Container(
-        width: 200,
+        width: 130,
         margin: const EdgeInsets.only(right: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,24 +390,24 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
             ClipRRect(
               child: Image.asset(
                 data['image']!,
-                height: 130,
+                height: 80,
                 width: double.infinity,
                 fit: BoxFit.cover,
               ),
             ),
             SizedBox(
-              width: 200,
+              width: 100,
               child: Text(
                 data['title']!,
                 textAlign: TextAlign.left,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             Text(
               "₹$price",
-              style: const TextStyle(fontSize: 13, color: Colors.red, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600),
             ),
           ],
         ),

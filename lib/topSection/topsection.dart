@@ -33,7 +33,7 @@ class TopSection extends StatelessWidget {
               // Right Section - Logo (Scales for Different Screens)
               Image.asset(
                 "assets/btclogo.png", // Replace with your logo asset
-                height: isSmallScreen ? 60 : 80, // Scales based on screen size
+                height: isSmallScreen ? 50 : 70, // Scales based on screen size
                 fit: BoxFit.contain,
               ),
             ],

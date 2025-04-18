@@ -31,17 +31,15 @@ class _ImageCarouselState extends State<ImageCarousel> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             bool isLandscape = constraints.maxWidth > constraints.maxHeight;
+            double imageHeight = isLandscape ? constraints.maxHeight * 0.65 : constraints.maxHeight * 0.5;
             double logoHeight = isLandscape ? 80 : 100;
-            double imageHeight = isLandscape
-                ? constraints.maxHeight * 0.6
-                : constraints.maxHeight * 0.6;
-            double buttonWidth = isLandscape ? 200 : 280;
+            double buttonWidth = isLandscape ? 240 : 280;
 
             return Column(
               children: [
                 // Top Logo
-                const SizedBox(height: 10,),
-                Padding(padding: const EdgeInsets.only(top: 80.0),
+                // const SizedBox(height: 10,),
+                Padding(padding: const EdgeInsets.only(top: 10),
                   child: Center(
                     child: Image.asset(
                       'assets/btclogo.png',
@@ -96,7 +94,6 @@ class _ImageCarouselState extends State<ImageCarousel> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        elevation: 4,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
