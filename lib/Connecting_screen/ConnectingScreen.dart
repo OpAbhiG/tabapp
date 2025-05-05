@@ -386,6 +386,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
 
       request.fields['latitude'] = position.latitude.toString();
       request.fields['longitude'] = position.longitude.toString();
+
       request.fields['speciality'] = widget.speciality;
 
       String mappedSpecialityId = specialityMapping[widget.speciality] ?? "1";
@@ -464,14 +465,79 @@ class _ConnectingScreenState extends State<ConnectingScreen>
     }
   }
   // Navigate to support
-  void _navigateToSupport() {
+  void _navigateToSupport() async{
+
+    bool apiCallSuccess =await _requestSupport();
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => SupportScreen(token: widget.token, sessionid: sessionId!,),
+        builder: (context) => SupportScreen(
+          token: widget.token,
+          sessionid: sessionId!,
+          supportRequestSent: apiCallSuccess,
+
+        ),
       ),
     );
   }
+
+
+  // New function to call support API
+  Future<bool> _requestSupport() async {
+    if (sessionId == null || sessionId!.isEmpty) {
+      print("[SUPPORT ERROR] session_id is empty!");
+      return false;
+    }
+
+    try {
+      print("[SUPPORT] Sending support request...");
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse("$baseapi/tab/request_for_support"),
+      );
+
+      // Add required field
+      request.fields['session_id'] = sessionId!;
+
+      // Add authorization header
+      request.headers['Authorization'] = 'Bearer ${widget.token}';
+
+      var response = await request.send();
+      var responseData = await response.stream.bytesToString();
+
+      print("[SUPPORT RESPONSE] Status: ${response.statusCode}");
+      print("[SUPPORT RESPONSE] Body: $responseData");
+
+      if (response.statusCode == 200) {
+        var jsonResponse = jsonDecode(responseData);
+
+        if (jsonResponse.containsKey('message') &&
+            jsonResponse['message'] == "Support request created successfully") {
+          print("[SUPPORT SUCCESS] Request created successfully");
+
+          // You can handle ticket_id if needed
+          if (jsonResponse.containsKey('ticket_id')) {
+            String ticketId = jsonResponse['ticket_id'];
+            print("[SUPPORT] Ticket ID: $ticketId");
+          }
+
+          return true;
+        } else {
+          print("[SUPPORT ERROR] Unexpected response: $responseData");
+          return false;
+        }
+      } else {
+        print("[SUPPORT ERROR] Failed: $responseData");
+        return false;
+      }
+    } catch (e) {
+      print("[SUPPORT CRITICAL ERROR] $e");
+      return false;
+    }
+  }
+
 
   @override
   void dispose() {
@@ -703,9 +769,12 @@ class _ConnectingScreenState extends State<ConnectingScreen>
 class SupportScreen extends StatefulWidget {
   final String token;
   final String sessionid;
+  final bool supportRequestSent;
+
 
   const SupportScreen({Key? key, required this.token,
-  required this.sessionid
+  required this.sessionid,
+    this.supportRequestSent = false,
   }) : super(key: key);
 
   @override
@@ -714,10 +783,22 @@ class SupportScreen extends StatefulWidget {
 class _SupportScreenState extends State<SupportScreen> {
   int _secondsRemaining = 7;
   late Timer _timer;
+  String? _supportMessage;
+
+
 
   @override
   void initState() {
     super.initState();
+
+    // If support request was not sent during navigation, try to send it now
+    if (!widget.supportRequestSent) {
+      _requestSupport();
+    } else {
+      setState(() {
+        _supportMessage = "Support request sent successfully";
+      });
+    }
 
     // Start countdown timer
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -738,6 +819,66 @@ class _SupportScreenState extends State<SupportScreen> {
     });
   }
 
+  // Support API request function
+  Future<void> _requestSupport() async {
+    if (widget.sessionid.isEmpty) {
+      setState(() {
+        _supportMessage = "Error: Session ID is missing";
+      });
+      return;
+    }
+
+    try {
+      print("[SUPPORT] Sending support request...");
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse("$baseapi/tab/request_for_support"),
+      );
+
+      // Add required field
+      request.fields['session_id'] = widget.sessionid;
+
+      // Add authorization header
+      request.headers['Authorization'] = 'Bearer ${widget.token}';
+
+      var response = await request.send();
+      var responseData = await response.stream.bytesToString();
+
+      print("[SUPPORT RESPONSE] Status: ${response.statusCode}");
+      print("[SUPPORT RESPONSE] Body: $responseData");
+
+      if (response.statusCode == 200) {
+        var jsonResponse = jsonDecode(responseData);
+
+        if (jsonResponse.containsKey('message') &&
+            jsonResponse['message'] == "Support request created successfully") {
+          setState(() {
+            _supportMessage = "Support request sent successfully";
+          });
+
+          // You can handle ticket_id if needed
+          if (jsonResponse.containsKey('ticket_id')) {
+            String ticketId = jsonResponse['ticket_id'];
+            print("[SUPPORT] Ticket ID: $ticketId");
+          }
+        } else {
+          setState(() {
+            _supportMessage = "Unexpected response from server";
+          });
+        }
+      } else {
+        setState(() {
+          _supportMessage = "Failed to send support request";
+        });
+      }
+    } catch (e) {
+      print("[SUPPORT CRITICAL ERROR] $e");
+      setState(() {
+        _supportMessage = "Error: $e";
+      });
+    }
+  }
   @override
   void dispose() {
     _timer.cancel();
@@ -777,6 +918,22 @@ class _SupportScreenState extends State<SupportScreen> {
             //   },
             //   child: Text("Contact Support"),
             // ),
+
+            if (_supportMessage != null) ...[
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  _supportMessage!,
+                  style: const TextStyle(fontSize: 16, color: Colors.green),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 30),
             Container(
               padding: const EdgeInsets.all(12),

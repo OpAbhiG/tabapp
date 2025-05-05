@@ -333,6 +333,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../APIServices/base_api.dart';
 import '../Connecting_screen/ConnectingScreen.dart';
+import '../screen_saver/screen_saveradd.dart';
 import '../topSection/topsection.dart';
 import 'package:crypto/crypto.dart';
 
@@ -376,6 +377,12 @@ class _PaymentScreenState extends State<pay> {
   static const String RAZORPAY_KEY_ID = "rzp_live_Erfo0J9KhDydDn";
   static const String RAZORPAY_KEY_SECRET="ajvN3dobkPGjLmxszHc3QIws";
 
+  // Add countdown variables
+  Timer? _countdownTimer;
+  int _remainingSeconds = 300; // 5 minutes = 300 seconds
+  bool _isTimedOut = false;
+
+
 
   @override
   void initState() {
@@ -386,71 +393,460 @@ class _PaymentScreenState extends State<pay> {
   @override
   void dispose() {
     _paymentCheckTimer?.cancel();
+    _countdownTimer?.cancel(); // Also cancel countdown timer
+
+
+
     super.dispose();
   }
 
-  void showQRCodeDialog() {
-    if (_qrCodeUrl != null) {
-      showDialog(
-        context: context,
-        builder: (context) {
-          return Dialog(
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            // Make the dialog larger overall
-            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+
+  // Format seconds into mm:ss
+  String _formatTime(int seconds) {
+    int minutes = seconds ~/ 60;
+    int remainingSeconds = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
+  // Start countdown timer for 5 minutes
+
+  void _startCountdownTimer({VoidCallback? onTick}) {
+    _remainingSeconds = 300;
+    _isTimedOut = false;
+
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remainingSeconds > 0) {
+        _remainingSeconds--;
+
+        if (onTick != null) {
+          onTick();
+        }
+
+        setState(() {});
+      } else {
+        _isTimedOut = true;
+        timer.cancel();
+        _paymentCheckTimer?.cancel();
+
+        // Show dialog with auto-navigation countdown
+        _showExpirationDialogWithAutoNavigate();
+      }
+    });
+  }
+
+  void _showExpirationDialogWithAutoNavigate() {
+    // Only proceed if the widget is still mounted
+    if (!mounted) return;
+
+    // Store context reference at the beginning
+    final BuildContext currentContext = context;
+
+    // Dialog auto-dismiss countdown seconds
+    int dialogCountdown = 15;
+    BuildContext? dialogContext;
+    Timer? countdownTimer;
+    bool dialogActive = true;
+
+    // Create a separate stream controller to update the UI
+    final countdownController = StreamController<int>.broadcast();
+    countdownController.add(dialogCountdown);
+
+    // First show the dialog
+    showDialog(
+      context: currentContext,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        dialogContext = context;
+        return StreamBuilder<int>(
+          stream: countdownController.stream,
+          initialData: dialogCountdown,
+          builder: (context, snapshot) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              title: Row(
                 children: [
+                  Icon(
+                    Icons.timer_off,
+                    color: Colors.red[700],
+                    size: 28,
+                  ),
+                  const SizedBox(width: 10),
                   const Text(
-                    'Scan to Pay',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  Image.network(
-                    _qrCodeUrl!,
-                    width: 520,
-                    height:620,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 450,
-                        height: 500,
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: Text('Failed to load QR code'),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Please wait until payment is confirmed',
-                    style: TextStyle(fontSize: 16),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text(
-                      "Close",
-                      style: TextStyle(color: Colors.red, fontSize: 16),
+                    "Payment Expired",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
                     ),
                   ),
                 ],
               ),
-            ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Your payment session has timed out due to inactivity.\nWould you like to try again?",
+                    style: TextStyle(fontSize: 12),
+                    textAlign: TextAlign.center,
+
+                  ),
+
+                  const SizedBox(height: 15),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.access_time, size: 18, color: Colors.red),
+                        const SizedBox(width: 5),
+                        Text(
+                          "Auto-redirecting in ${snapshot.data} sec",
+                          style: const TextStyle(
+                            color: Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    dialogActive = false;
+                    if (countdownTimer != null && countdownTimer!.isActive) {
+                      countdownTimer!.cancel();
+                    }
+
+                    if (!countdownController.isClosed) {
+                      countdownController.close();
+                    }
+
+                    try {
+                      Navigator.of(context).pop();
+
+                      if (mounted) {
+                        Navigator.pushReplacement(
+                          currentContext,
+                          MaterialPageRoute(builder: (context) => const ImageCarousel()),
+                        );
+                      }
+                    } catch (e) {
+                      print("Navigation error: $e");
+                      // Try alternative navigation if initial attempt fails
+                      if (mounted) {
+                        Future.microtask(() {
+                          Navigator.pushReplacement(
+                            currentContext,
+                            MaterialPageRoute(builder: (context) => const ImageCarousel()),
+                          );
+                        });
+                      }
+                    }
+                  },
+                  child: const Text(
+                    "Cancel",
+                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                  onPressed: () {
+                    dialogActive = false;
+                    if (countdownTimer != null && countdownTimer!.isActive) {
+                      countdownTimer!.cancel();
+                    }
+
+                    if (!countdownController.isClosed) {
+                      countdownController.close();
+                    }
+
+                    try {
+                      Navigator.of(context).pop();
+                      if (mounted) {
+                        _generateQRCode(); // Regenerate the QR code
+                      }
+                    } catch (e) {
+                      print("Navigation error: $e");
+                      // Try QR code generation directly if navigation fails
+                      if (mounted) {
+                        Future.microtask(() {
+                          _generateQRCode();
+                        });
+                      }
+                    }
+                  },
+                  child: const Text(
+                    "Try Again",
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+              ],
+              actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            );
+          },
+        );
+      },
+    ).then((_) {
+      // This runs when dialog is closed
+      dialogActive = false;
+      countdownTimer?.cancel();
+      if (!countdownController.isClosed) {
+        countdownController.close();
+      }
+    });
+
+    // Now start the countdown timer
+    countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      // First check if timer should still be running
+      if (!dialogActive || !mounted) {
+        timer.cancel();
+        if (!countdownController.isClosed) {
+          countdownController.close();
+        }
+        return;
+      }
+
+      dialogCountdown--;
+
+      // Send the updated value to the stream
+      if (!countdownController.isClosed) {
+        countdownController.add(dialogCountdown);
+      }
+
+      if (dialogCountdown <= 0) {
+        timer.cancel();
+        dialogActive = false;
+
+        // Close the stream
+        if (!countdownController.isClosed) {
+          countdownController.close();
+        }
+
+        // Pop the dialog if it's still showing
+        try {
+          if (dialogContext != null) {
+            if (Navigator.of(dialogContext!, rootNavigator: true).canPop()) {
+              Navigator.of(dialogContext!, rootNavigator: true).pop();
+            }
+          }
+
+          // Navigate to ImageCarousel only if the widget is still mounted
+          if (mounted) {
+            Navigator.pushReplacement(
+              currentContext,
+              MaterialPageRoute(builder: (context) => const ImageCarousel()),
+            );
+          }
+        } catch (e) {
+          print("Navigation error during auto-redirect: $e");
+          // Try alternative navigation approach
+          if (mounted) {
+            Future.microtask(() {
+              Navigator.pushReplacement(
+                currentContext,
+                MaterialPageRoute(builder: (context) => const ImageCarousel()),
+              );
+            });
+          }
+        }
+      }
+    });
+  }
+
+  void showQRCodeDialog() {
+    if (_qrCodeUrl != null) {
+      // Store a reference to the current context that won't be invalidated
+      final BuildContext currentContext = context;
+      bool dialogActive = true;
+
+      // Use a separate variable to track if dialog is still active
+      Timer? dialogTimer;
+
+      showDialog(
+        context: currentContext,
+        barrierDismissible: false,
+        builder: (BuildContext dialogContext) {
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setDialogState) {
+
+              // Start the timer after the dialog is shown
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                dialogTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                  // First check if dialog is still active before doing anything
+                  if (!dialogActive) {
+                    timer.cancel();
+                    return;
+                  }
+
+                  // Safe update of dialog state
+                  if (dialogActive) {
+                    setDialogState(() {
+                      // Just trigger rebuild to show updated time
+                    });
+                  }
+
+                  // Check if time has expired
+                  if (_remainingSeconds <= 0) {
+                    timer.cancel();
+                    dialogActive = false;
+
+                    // Use try-catch to handle any potential navigation errors
+                    try {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop(); // Close this dialog
+                      }
+
+                      // Only show expiration dialog if widget is still mounted
+                      if (mounted) {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          if (mounted) {
+                            _showExpirationDialogWithAutoNavigate();
+                          }
+                        });
+                      }
+                    } catch (e) {
+                      print("Navigation error: $e");
+                      // Skip further navigation if there's an error
+                    }
+                  }
+                });
+              });
+
+              return PopScope(
+                onPopInvoked: (didPop) {
+                  // Mark dialog as inactive and cancel timer
+                  dialogActive = false;
+                  dialogTimer?.cancel();
+                },
+                child: Dialog(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  insetPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // const Text(
+                        //   'Scan to Pay',
+                        //   style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        // ),
+                        // const SizedBox(height: 16),
+                        Image.network(
+                          _qrCodeUrl!,
+                          width: 520,
+                          height: 630,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 450,
+                              height: 500,
+                              color: Colors.grey[200],
+                              child: const Center(
+                                child: Text('Failed to load QR code'),
+                              ),
+                            );
+                          },
+                        ),
+                        // const SizedBox(height: 16),
+                        // const Text(
+                        //   'Please wait until payment is confirmed',
+                        //   style: TextStyle(fontSize: 12),
+                        //   textAlign: TextAlign.center,
+                        // ),
+
+                        // Add countdown timer to main screen if QR is generated
+                        if (_qrCodeUrl != null && !_isTimedOut) ...[
+                          // const SizedBox(height: 15),
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                              child: Text(
+                                'Payment expires in ${_formatTime(_remainingSeconds)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: _remainingSeconds < 60 ? Colors.red : Colors.green.shade800,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        // const SizedBox(height: 16),
+                        // TextButton(
+                        //   onPressed: () {
+                        //     // Mark dialog as inactive before closing
+                        //     dialogActive = false;
+                        //     dialogTimer?.cancel();
+                        //
+                        //     // Try-catch for safer navigation
+                        //     try {
+                        //       Navigator.of(context).pop();
+                        //     } catch (e) {
+                        //       print("Error closing dialog: $e");
+                        //     }
+                        //   },
+                        //   child: const Text(
+                        //     "Close",
+                        //     style: TextStyle(color: Colors.red, fontSize: 12),
+                        //   ),
+                        // ),
+                        TextButton(
+                          onPressed: () {
+                            // Mark dialog as inactive before closing
+                            dialogActive = false;
+                            dialogTimer?.cancel();
+
+                            // Try-catch for safer navigation
+                            try {
+                              Navigator.of(context).pop();
+                            } catch (e) {
+                              print("Error closing dialog: $e");
+                            }
+                          },
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.red,
+                            size: 18,
+                          ),
+                        ),
+
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           );
         },
-      );
+      ).then((_) {
+        // This runs when the dialog is closed by any means
+        dialogActive = false;
+        dialogTimer?.cancel();
+      });
     } else {
       _showErrorMessage("QR Code not available. Please generate again.");
     }
   }
+
+
   // Generate QR code from the API
   Future<void> _generateQRCode() async {
     setState(() {
@@ -517,6 +913,8 @@ class _PaymentScreenState extends State<pay> {
         });
 
 
+        // Start countdown timer when QR code is generated
+        _startCountdownTimer();
 
         showQRCodeDialog();
 
@@ -542,6 +940,7 @@ class _PaymentScreenState extends State<pay> {
 
   Future<void> _checkPaymentStatus() async {
     if (_qrCodeId == null) {
+      _paymentCheckTimer?.cancel();
       print('QR Code ID is null, skipping request.');
       return;
     }
@@ -590,6 +989,11 @@ class _PaymentScreenState extends State<pay> {
             _paymentCheckTimer?.cancel();
             _handlePaymentSuccess();
             return;
+          } else if (data['status'] == 'used') {
+            // Some UPI payments might show as "used" before payment details appear
+            _paymentCheckTimer?.cancel();
+            _handlePaymentSuccess();
+            return;
           }
         }
 
@@ -607,6 +1011,10 @@ class _PaymentScreenState extends State<pay> {
 
 
   void _handlePaymentSuccess() {
+
+     // Cancel countdown timer on successful payment
+    _countdownTimer?.cancel();
+    _paymentCheckTimer?.cancel();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Payment Successful: $_qrCodeId")),
     );
@@ -756,72 +1164,44 @@ class _PaymentScreenState extends State<pay> {
                               color: Colors.green
                           ),
                         ),
-                        // const SizedBox(height: 20),
-                        //
-                        // // QR Code Display Section
-                        // if (_qrCodeUrl != null)
+                        // Add countdown timer to main screen if QR is generated
+                        // if (_qrCodeUrl != null && !_isTimedOut) ...[
+                        //   const SizedBox(height: 15),
                         //   Center(
-                        //     child: Column(
-                        //       children: [
-                        //         Image.network(
-                        //           _qrCodeUrl!,
-                        //           height: 200,
-                        //           width: 200,
-                        //           fit: BoxFit.contain,
-                        //           loadingBuilder: (context, child, loadingProgress) {
-                        //             if (loadingProgress == null) return child;
-                        //             return Center(
-                        //               child: CircularProgressIndicator(
-                        //                 value: loadingProgress.expectedTotalBytes != null
-                        //                     ? loadingProgress.cumulativeBytesLoaded /
-                        //                     loadingProgress.expectedTotalBytes!
-                        //                     : null,
-                        //               ),
-                        //             );
-                        //           },
-                        //           errorBuilder: (context, error, stackTrace) {
-                        //             return Container(
-                        //               height: 200,
-                        //               width: 200,
-                        //               color: Colors.grey[200],
-                        //               child: const Center(
-                        //                 child: Text('Failed to load QR code'),
-                        //               ),
-                        //             );
-                        //           },
+                        //     child: Container(
+                        //       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                        //       child: Text(
+                        //         'Payment expires in ${_formatTime(_remainingSeconds)}',
+                        //         style: TextStyle(
+                        //           fontSize: 16,
+                        //           fontWeight: FontWeight.bold,
+                        //           color: _remainingSeconds < 60 ? Colors.red : Colors.green.shade800,
                         //         ),
-                        //         const SizedBox(height: 16),
-                        //         const Text(
-                        //           'Scan the QR code to complete payment',
-                        //           style: TextStyle(fontWeight: FontWeight.bold),
-                        //           textAlign: TextAlign.center,
-                        //         ),
-                        //         const SizedBox(height: 8),
-                        //         Text(
-                        //           'Payment status is being checked automatically',
-                        //           style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                        //           textAlign: TextAlign.center,
-                        //         ),
-                        //       ],
+                        //       ),
                         //     ),
                         //   ),
-
+                        // ],
                         const SizedBox(height: 20),
                         Row(
                           children: [
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: _qrCodeUrl == null
+                                onPressed: _isTimedOut
+                                    ? null  // Disable button if timed out
+                                    : (_qrCodeUrl == null
                                     ? () => _generateQRCode()
-                                    : () => showQRCodeDialog(), // Reopen QR Code Popup
+                                    : () => showQRCodeDialog()), // Reopen QR Code Popup
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.red,
                                   padding: const EdgeInsets.symmetric(vertical: 14),
+                                  disabledBackgroundColor: Colors.grey, // Grey when timed out
                                 ),
                                 child: _isLoading
                                     ? const CircularProgressIndicator(color: Colors.white)
                                     : Text(
-                                  _qrCodeUrl == null ? 'Generate Payment QR' : 'View QR Code',
+                                  _isTimedOut
+                                      ? 'Payment Time Out'
+                                      : (_qrCodeUrl == null ? 'Generate Payment QR' : 'View QR Code'),
                                   style: const TextStyle(color: Colors.white, fontSize: 16),
                                 ),
                               ),
@@ -841,3 +1221,7 @@ class _PaymentScreenState extends State<pay> {
     );
   }
 }
+
+
+
+

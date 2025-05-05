@@ -580,6 +580,9 @@ class _CallPageState extends State<CallPage> {
   double bodyTemp = 0.0;
   late StreamSubscription sensorSubscription;
 
+
+  bool isMenuOpen = false; // Track if the menu is open
+
   // Add SensorApiService instance
   late SensorApiService _apiService;
 
@@ -677,6 +680,7 @@ class _CallPageState extends State<CallPage> {
     );
   }
 
+  bool _showOptions = false;
 
   @override
   void dispose() {
@@ -745,6 +749,114 @@ class _CallPageState extends State<CallPage> {
             ),
           ),
         ),
+
+
+        // NEW FLOATING ACTION BUTTON WITH POPUP MENU (bottom right)
+        Positioned(
+            bottom: 5,
+            right: 20,
+            child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+            // Options that appear when menu is open
+              if (_showOptions) ...[
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black26, blurRadius: 4),
+                        ],
+                      ),
+                      child: Text("Store", style: TextStyle(fontSize: 12,decoration: TextDecoration.none,color: Color(0xFF243B6D))),
+                    ),
+                    SizedBox(width: 8),
+                    FloatingActionButton(
+                      heroTag: 'store',
+                      mini: true,
+                      onPressed: () {
+                        print("Store clicked");
+                      },
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.store,color: Color(0xFF243B6D)),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10),
+
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black26, blurRadius: 4),
+                        ],
+                      ),
+                      child: Text("Other", style: TextStyle(fontSize: 12,decoration: TextDecoration.none,color: Color(0xFF243B6D))),
+                    ),
+                    SizedBox(width: 8),
+                    FloatingActionButton(
+                      heroTag: 'other',
+
+                      mini: true,
+                      onPressed: () {
+                        print("Other clicked");
+                      },
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.more_horiz,color: Color(0xFF243B6D)),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10),
+              ],
+
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    _showOptions ? Icons.close : Icons.send,
+                    color: Color(0xFF243B6D), // Match printer icon color
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _showOptions = !_showOptions;
+                    });
+                  },
+                ),
+              ),
+
+
+
+            ],
+            ),
+
+        ),
+
+
+
       ],
     );
   }

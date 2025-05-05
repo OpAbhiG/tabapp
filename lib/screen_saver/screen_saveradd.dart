@@ -32,13 +32,13 @@ class _ImageCarouselState extends State<ImageCarousel> {
           builder: (context, constraints) {
             bool isLandscape = constraints.maxWidth > constraints.maxHeight;
             double imageHeight = isLandscape ? constraints.maxHeight * 0.65 : constraints.maxHeight * 0.5;
-            double logoHeight = isLandscape ? 80 : 100;
+            double logoHeight = isLandscape ? 80 : 90;
             double buttonWidth = isLandscape ? 240 : 280;
 
             return Column(
               children: [
                 // Top Logo
-                // const SizedBox(height: 10,),
+                const SizedBox(height: 10,),
                 Padding(padding: const EdgeInsets.only(top: 10),
                   child: Center(
                     child: Image.asset(
