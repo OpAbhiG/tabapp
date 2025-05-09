@@ -751,7 +751,7 @@ class _PaymentScreenState extends State<pay> {
                         Image.network(
                           _qrCodeUrl!,
                           width: 520,
-                          height: 630,
+                          height: 690,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
