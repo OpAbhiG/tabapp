@@ -5,6 +5,8 @@ import '../topSection/topsection.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+//v2
+
 class SpecialitiesScreen extends StatefulWidget {
   SpecialitiesScreen({super.key});
 
@@ -52,6 +54,21 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
     _animationController.dispose();
     super.dispose();
   }
+
+  // Future<List<Map<String, dynamic>>> fetchSpecialities() async {
+  //   final response = await http.get(Uri.parse("$baseapi/tab/tb-speciality"));
+  //
+  //   if (response.statusCode == 200) {
+  //     print(jsonDecode(response.body));
+  //     print("Response Status Code: ${response.statusCode}");
+  //     print("Response Body: ${response.body}");
+  //
+  //     final data = json.decode(response.body);
+  //     return List<Map<String, dynamic>>.from(data["specialities"]);
+  //   } else {
+  //     throw Exception("Failed to load specialities");
+  //   }
+  // }
   Future<List<Map<String, dynamic>>> fetchSpecialities() async {
     try {
       final response = await http.get(Uri.parse("$baseapi/tab/tb-speciality"));
@@ -101,16 +118,16 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
               final specialities = snapshot.data ?? [];
 
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(15.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // const SizedBox(height: 10),
                     const TopSection(),
-                    const SizedBox(height: 10),
+                    // const SizedBox(height: 10),
                     const Text(
                       "25+ Specialities",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     // const SizedBox(height: 5),
                     const Text(
@@ -118,23 +135,23 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                       style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
 
-                    const SizedBox(height: 10),
+                    // const SizedBox(height: 10),
                     specialities.isEmpty
                         ? const Center(child: Text("No specialities available"))
                         : Stack(
                       children: [
                         SizedBox(
-                          height: 350,
-                          child:ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: specialities.length,
-                            itemBuilder: (context, index) => _hasShownHint
-                                ? _buildSpecialityCard(context, specialities[index])
-                                : SlideTransition(
-                              position: _slideAnimation,
-                              child: _buildSpecialityCard(context, specialities[index]),
-                            ),
-                          )
+                            height: 410,
+                            child:ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: specialities.length,
+                              itemBuilder: (context, index) => _hasShownHint
+                                  ? _buildSpecialityCard(context, specialities[index])
+                                  : SlideTransition(
+                                position: _slideAnimation,
+                                child: _buildSpecialityCard(context, specialities[index]),
+                              ),
+                            )
 
                         ),
                         // Overlay hint text
@@ -147,7 +164,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                               child: TweenAnimationBuilder<double>(
                                 duration: const Duration(milliseconds: 800),
                                 tween: Tween(begin: 0.8, end: 1.0),
-                                curve: Curves.easeInOutBack,
+                                curve: Curves.elasticOut,
                                 builder: (context, scale, child) {
                                   return Transform.scale(
                                     scale: scale,
@@ -178,7 +195,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                                             style: TextStyle(
                                               color: Colors.white,
                                               fontSize: 16,
-                                              fontWeight: FontWeight.w600,
+                                              fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                           const SizedBox(width: 8),
@@ -211,21 +228,22 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                       ],
                     ),
 
-                    const SizedBox(height: 10),
+                    // const SizedBox(height: 10),
                     const Text(
                       "Common Health Concerns",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     // const SizedBox(height: 5),
                     const Text(
                       "Consult a doctor online for any health issue",
                       style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
-                    const SizedBox(height: 10),
+                    // const SizedBox(height: 10),
+
                     specialities.isEmpty
                         ? const Center(child: Text("No concerns available"))
                         : SizedBox(
-                      height: 150,
+                      height: 190,
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         children: _buildHealthConcerns(specialities),
@@ -286,23 +304,23 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
         );
       },
       child: Container(
-        width: 190,
+        width: 250,
         margin: const EdgeInsets.only(right: 15),
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0xFF5856D6), width: 2.5),
-          borderRadius: BorderRadius.circular(40),
+          borderRadius: BorderRadius.circular(25),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(38),
-                topRight: Radius.circular(38),
+                topLeft: Radius.circular(23),
+                topRight: Radius.circular(23),
               ),
               child: Image.asset(
                 specialityImage,
-                height: 240,
+                height: 290,
                 width: double.infinity,
                 fit: BoxFit.cover,
               ),
@@ -311,19 +329,18 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // const SizedBox(height: 8,),
+                const SizedBox(height: 8,),
                 Text(
                   data['speciality_name'],
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
                 Text(
                   "₹${data['consultation_fee']}",
-                  style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600),
+                  style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 5),
                 ElevatedButton(
-
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -337,15 +354,11 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-
-                    // shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                   ),
                   child: const Text(
                     "Consult Now",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600,fontSize: 12),
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -382,7 +395,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
         );
       },
       child: Container(
-        width: 130,
+        width: 200,
         margin: const EdgeInsets.only(right: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,24 +403,24 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
             ClipRRect(
               child: Image.asset(
                 data['image']!,
-                height: 80,
+                height: 130,
                 width: double.infinity,
                 fit: BoxFit.cover,
               ),
             ),
             SizedBox(
-              width: 100,
+              width: 200,
               child: Text(
                 data['title']!,
                 textAlign: TextAlign.left,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             Text(
               "₹$price",
-              style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: 13, color: Colors.red, fontWeight: FontWeight.bold),
             ),
           ],
         ),

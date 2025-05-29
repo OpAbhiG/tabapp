@@ -1,17 +1,20 @@
 import 'dart:async';
 import 'package:PatientTabletApp/APIServices/base_api.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
 import '../SerialCommunication/USB_oxymitter_sensor.dart';
 import 'common.dart';
 import 'package:http/http.dart' as http;
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:PatientTabletApp/thankyoupage/thankyoupage.dart';
-import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
+import 'package:usb_serial/usb_serial.dart';
+import 'dart:typed_data';
+import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
+import 'package:flutter/services.dart';
+import 'package:image/image.dart' as img;
+
 class SensorApiService {
   final String baseUrl;
   final String token;
@@ -124,85 +127,85 @@ class TabPrescriptionScreen extends StatefulWidget {
 }
 
 class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
-
-  late Map<String, dynamic> prescriptionData;
-  String? prescriptionId;
-
+  // Data-related variables
   bool isLoading = true;
   List<dynamic> prescriptions = [];
   String doctorName = '';
   String licenseNumber = '';
   String errorMessage = '';
 
+  // Printer-related variables
+  UsbDevice? _printerDevice;
+  UsbPort? _printerPort;
+  bool _isPrinting = false;
+  bool _isPrinterInitializing = false;
+  bool _isPrinterConnected = false;
+  final int _printerWidth = 384; // Width in dots for 58mm printer
+  String _printerStatus = "Not initialized";
+  // List<String> _debugMessages = [];
+  // final int _maxDebugMessages = 15;
+
+  // Date formatting
+  final dateFormat = DateFormat('dd-MM-yyyy');
+  final timeFormat = DateFormat('HH:mm');
+  final currentDate = DateTime.now();
+
+
+  // Add this variable with your other class variables
+  String signatureUrl = '';
+
+
   @override
   void initState() {
     super.initState();
     fetchPrescriptionData();
+
+    // Initialize printer connection during screen load
+    _initPrinterConnection();
   }
 
-  void _showSnackBar(String message) {
+  @override
+  void dispose() {
+    // Close printer connection when screen is disposed
+    if (_printerPort != null) {
+      try {
+        _printerPort!.close();
+      } catch (e) {
+        print("Error closing printer port: $e");
+      }
+      _printerPort = null;
+    }
+    super.dispose();
+  }
+
+  // void _showSnackBar(String message, {Duration? duration}) {
+  //   if (mounted) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text(message),
+  //         duration: duration ?? const Duration(seconds: 2),
+  //         behavior: SnackBarBehavior
+  //             .floating, // Make it float to be less intrusive
+  //       ),
+  //     );
+  //   }
+  // }
+
+  void _showSnackBar(String message, {Duration? duration}) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
+        SnackBar(
+          content: Text(message),
+          duration: duration ?? const Duration(seconds: 1), // Short duration
+          behavior: SnackBarBehavior.floating, // Float above content
+          margin: const EdgeInsets.only(bottom: 80, left: 20, right: 20), // Position above FAB
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), // Rounded corners
+        ),
       );
     }
   }
 
 
-
-  Future<void> fetchPrescriptionData() async {
-    setState(() {
-      isLoading = true;
-      errorMessage = '';
-    });
-
-    try {
-      // Build the URL with query parameters
-      final Uri uri = Uri.parse('$baseapi/tab/get_drug_list_by_session')
-          .replace(queryParameters: {'session_id': widget.sessionId});
-
-      // Make the GET request with Authorization header
-      final response = await http.get(
-        uri,
-        headers: {
-          'Authorization': 'Bearer ${widget.token}',
-        },
-      );
-
-      // Check response status
-      if (response.statusCode == 200) {
-
-        print('Response Status Code: ${response.statusCode}');
-        print('Response Body: ${response.body}');
-
-        final Map<String, dynamic> data = json.decode(response.body);
-
-        setState(() {
-          doctorName = data['doctor_name'] ?? 'Unknown Doctor';
-          licenseNumber = data['license'] ?? '';
-          prescriptions = List.from(data['prescriptions'] ?? []); // Ensure it's a List
-          isLoading = false;
-        });
-
-        print('Prescription data fetched successfully: ${response.body}');
-      } else {
-        setState(() {
-          errorMessage = 'No prescriptions found (Error ${response.statusCode})';
-          isLoading = false;
-        });
-        print('Failed to fetch prescriptions: ${response.statusCode}');
-        print('Response: ${response.body}');
-        _showSnackBar('Failed to fetch prescriptions');
-      }
-    } catch (e) {
-      setState(() {
-        errorMessage = 'Error fetching prescriptions: $e';
-        isLoading = false;
-      });
-      print('Exception when fetching prescriptions: $e');
-      _showSnackBar('Error loading prescriptions');
-    }
-  }
 
 
   String getFrequencyPattern(dynamic frequencyValue) {
@@ -221,177 +224,611 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
     String frequencyString = frequencyValue.toString();
     return frequencyMapping[frequencyString] ?? 'Unknown Frequency';
   }
-  final dateFormat = DateFormat('dd-MM-yyyy');
-  final timeFormat = DateFormat('HH:mm');
-  final currentDate = DateTime.now();
 
-  Future<void> _generatePrintPreview() async {
-    final pdf = pw.Document();
+  Future<void> fetchPrescriptionData() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
 
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a5,
-        maxPages: 10,  // Support multiple pages for long prescriptions
-        build: (pw.Context context) {
-          return [
-            // Header - Reduced font sizes
-            pw.Center(
-              child: pw.Text(
-                'BharatTeleClinic',
-                style: pw.TextStyle(fontSize: 30, fontWeight: pw.FontWeight.bold),
-              ),
-            ),
-            pw.Center(
-              child: pw.Text(
-                'BharatTelePharma Pvt.Ltd.',
-                style: const pw.TextStyle(fontSize: 25),
-              ),
-            ),
+    try {
+      // Build the URL with query parameters
+      final Uri uri = Uri.parse('$baseapi/tab/get_drug_list_by_session')
+          .replace(queryParameters: {'session_id': widget.sessionId});
 
-            pw.SizedBox(height: 2),
-            pw.Divider(thickness: 3),
-            pw.SizedBox(height: 2),
+      print("-------------------- $uri --------------------");
 
-            // Doctor Details - Reduced font sizes and improved formatting
-            pw.Center(child:  pw.Text('Doctor: $doctorName', style: const pw.TextStyle(fontSize: 20)), ),
-            pw.Center(child:   pw.Text('License No: $licenseNumber', style: const pw.TextStyle(fontSize: 20)), ),
-
-            pw.SizedBox(height: 2),
-            pw.Divider(thickness:3),
-            pw.SizedBox(height: 2),
-
-
-            pw.Center(child:   pw.Text(
-              'Date: ${dateFormat.format(currentDate)} | Time: ${timeFormat.format(currentDate)}',
-              style: const pw.TextStyle(fontSize: 20),
-
-            ), ),
-            pw.SizedBox(height: 2),
-            pw.Divider(thickness: 3),
-            pw.SizedBox(height: 2),
-
-            // Prescription Header - Reduced font size
-            pw.Text(
-              'Medications',
-              style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
-            ),
-            pw.SizedBox(height: 3),
-
-            // Loop through prescriptions with optimized formatting
-            ...prescriptions.map(
-                  (prescription) => pw.Container(
-                margin: const pw.EdgeInsets.only(bottom: 3),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'Drug: ${prescription['drug_name']}',
-                      style: const pw.TextStyle(fontSize: 20, ),
-                    ),
-                    pw.Text(
-                      'Dosage: ${prescription['dosage'] ?? ''} ${prescription['unit'] ?? ''}',
-                      style: const pw.TextStyle(fontSize: 20),
-                      // Use maxLines and soft wrap to handle long texts
-                      maxLines: 2,
-                    ),
-                    pw.Text(
-                      'Duration: ${prescription['duration'] ?? ''} days',
-                      style: const pw.TextStyle(fontSize: 20),
-                    ),
-                    pw.Text(
-                      'Frequency: ${getFrequencyPattern(prescription['frequency'])}',
-                      style: const pw.TextStyle(fontSize: 20),
-                    ),
-                    pw.Text(
-                      'Instruction: ${prescription['instruction']}',
-                      style: const pw.TextStyle(fontSize: 20),
-                      // Use maxLines and soft wrap to handle long texts
-                      maxLines: 3,
-                    ),
-                    pw.Text(
-                      'Notes: ${prescription['notes']}',
-                      style: const pw.TextStyle(fontSize: 20),
-                      maxLines: 10,
-                    ),
-                    pw.Divider(thickness: 2),
-                  ],
-                ),
-              ),
-            ),
-
-            // pw.SizedBox(height: 5),
-
-            // Signature - Right-aligned with smaller dimensions
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.end,
-              children: [
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
-                  children: [
-                    pw.Container(
-                      // height: 15,
-                      // width: 60,
-                      child: pw.Text('Signature', style: const pw.TextStyle(fontSize: 15)),
-                    ),
-                    pw.Text(
-                      "Dr.$doctorName",
-                      style: const pw.TextStyle(fontSize: 15),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            pw.SizedBox(height: 2),
-            pw.Divider(thickness: 3),
-            pw.SizedBox(height: 2),
-
-            // Disclaimer with smaller font and word wrapping
-            pw.Center(
-              child: pw.Text(
-                "This prescription is issued based on a teleconsultation. Consult your doctor in case of adverse reactions.",
-                style: const pw.TextStyle(fontSize: 18),
-                textAlign: pw.TextAlign.center,
-              ),
-            ),
-
-            pw.SizedBox(height: 5),
-
-            // Footer with reduced font size
-            pw.Center(
-              child: pw.Text(
-                "THANK YOU! VISIT AGAIN!",
-                style: pw.TextStyle(fontSize: 25, fontWeight: pw.FontWeight.bold),
-                textAlign: pw.TextAlign.center,
-
-              ),
-            ),
-            pw.SizedBox(height: 5),
-            pw.Center(
-              child: pw.Text(
-                "hello@bharatteleclinic.co | +919581870076",
-                style: const pw.TextStyle(fontSize: 18),
-                textAlign: pw.TextAlign.center,
-
-              ),
-            ),
-          ];
+      // Make the GET request with Authorization header
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer ${widget.token}',
         },
-      ),
-    );
+      );
 
-    // Show Print Preview
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save(),
-      // Force using our custom format
-      // format: thermalPrinterFormat,
+      // Check response status
+      if (response.statusCode == 200) {
+        print('Response Status Code: ${response.statusCode}');
+        print('Response Body: ${response.body}');
+
+        final Map<String, dynamic> data = json.decode(response.body);
+
+        print("-------------------- $data --------------------");
+        setState(() {
+          doctorName = data['doctor_name'] ?? 'Unknown Doctor';
+          licenseNumber = data['license'] ?? '';
+          prescriptions = List.from(data['prescriptions'] ?? []); // Ensure it's a List
+          // Build complete signature URL with hardcoded CloudFront URL
+          String signaturePath = data['signature'] ?? '';
+          if (signaturePath.isNotEmpty) {
+            // Extract just the filename from the path (remove doctor_sign/ prefix if present)
+            String fileName = signaturePath.startsWith('https://d116q8t0apa2jk.cloudfront.net/doctor_sign/')
+                ? signaturePath.substring('doctor_sign/'.length)
+                : signaturePath;
+            signatureUrl = 'https://d116q8t0apa2jk.cloudfront.net/doctor_sign/$fileName';
+          } else {
+            signatureUrl = '';
+          }
+          isLoading = false;
+        });
+        print('Signature URL: $signatureUrl');
+
+        print('Prescription data fetched successfully: ${response.body}');
+      } else {
+        setState(() {
+          errorMessage =
+          'No prescriptions found (Error ${response.statusCode})';
+          isLoading = false;
+        });
+        print('Failed to fetch prescriptions: ${response.statusCode}');
+        print('Response: ${response.body}');
+        _showSnackBar('Failed to fetch prescriptions');
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error fetching prescriptions: $e';
+        isLoading = false;
+      });
+      print('Exception when fetching prescriptions: $e');
+      _showSnackBar('Error loading prescriptions');
+    }
+  }
+
+  // Show debug messages on screen
+
+//   void _addDebugMessage(String message) {
+//     setState(() {
+//       _debugMessages.add(
+//           "[${DateTime.now().toString().substring(11, 19)}] $message");
+//       // Keep only the last N messages
+//       if (_debugMessages.length > _maxDebugMessages) {
+//         _debugMessages.removeAt(0);
+//       }
+//     });
+//     print(message); // Also print to console
+//   }
+
+
+  void _addDebugMessage(String message) {
+    // Just print to console,
+    print("Printer: $message");
+  }
+
+
+// Show a more visible message dialog
+  void _showMessageDialog(String title, String message) {
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: Text(message),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
     );
   }
+
+
+
+// Initialize the printer with direct USB approach
+  Future<void> _initPrinterConnection() async {
+    if (_isPrinterInitializing) {
+      _addDebugMessage("Printer initialization already in progress");
+      return;
+    }
+
+    setState(() {
+      _isPrinterInitializing = true;
+      _printerStatus = "Connecting...";
+    });
+
+    _addDebugMessage("Starting printer connection");
+
+    try {
+      // Close existing connection if any
+      if (_printerPort != null) {
+        try {
+          await _printerPort!.close();
+          _addDebugMessage("Closed existing connection");
+        } catch (e) {
+          _addDebugMessage("Error closing port: $e");
+        }
+        _printerPort = null;
+      }
+
+      // List available devices
+      _addDebugMessage("Listing USB devices");
+      List<UsbDevice> devices = await UsbSerial.listDevices();
+
+      if (devices.isEmpty) {
+        _addDebugMessage("No USB devices found");
+        setState(() {
+          _isPrinterConnected = false;
+          _printerStatus = "No USB devices";
+        });
+        return;
+      }
+
+      // Log all found devices
+      _addDebugMessage("Found ${devices.length} USB devices:");
+      for (var device in devices) {
+        _addDebugMessage("VID:${device.vid}, PID:${device.pid}");
+      }
+
+      _addDebugMessage("Looking for printer with VID:4070, PID:33054");
+      _printerDevice = null;
+
+      for (var device in devices) {
+        if (device.vid == 4070 && device.pid == 33054) {
+          _printerDevice = device;
+          _addDebugMessage("Found printer device matching exact VID/PID");
+          break;
+        }
+      }
+
+      // If specific device not found, try any device
+      if (_printerDevice == null && devices.isNotEmpty) {
+        _printerDevice = devices.first;
+        _addDebugMessage("Using first available device: VID:${devices.first.vid}, PID:${devices.first.pid}");
+      }
+
+      if (_printerDevice == null) {
+        _addDebugMessage("No devices available");
+        setState(() {
+          _isPrinterConnected = false;
+          _printerStatus = "No printer found";
+        });
+        return;
+      }
+
+      // Try direct USB printing approach using our native plugin
+      try {
+        _addDebugMessage("Trying direct USB printing approach");
+
+        const platform = MethodChannel('com.bharatteleclinic/usb_printer');
+
+        final bool success = await platform.invokeMethod('printTest', {
+          'vendorId': _printerDevice!.vid,
+          'productId': _printerDevice!.pid,
+        });
+
+        _addDebugMessage("Direct USB print test result: $success");
+
+        if (success) {
+          setState(() {
+            _isPrinterConnected = true;
+            _printerStatus = "Connected (Direct USB)";
+          });
+          _addDebugMessage("Printer connected using direct USB");
+          return;
+        } else {
+          _addDebugMessage("Direct USB test command failed");
+        }
+      } catch (e) {
+        _addDebugMessage("Direct USB approach failed: $e");
+      }
+
+      // If direct USB approach failed, we'll try with UsbSerial as fallback
+      _addDebugMessage("Falling back to UsbSerial approach");
+      try {
+        _printerPort = await _printerDevice!.create();
+        if (_printerPort == null) {
+          _addDebugMessage("Failed to create port");
+          setState(() {
+            _isPrinterConnected = false;
+            _printerStatus = "Port creation failed";
+          });
+          return;
+        }
+
+        bool opened = false;
+        try {
+          _addDebugMessage("Attempting to open port");
+          opened = await _printerPort!.open();
+          _addDebugMessage("Port open result: $opened");
+        } catch (e) {
+          _addDebugMessage("Error opening port: $e");
+          opened = false;
+        }
+
+        if (!opened) {
+          _addDebugMessage("Failed to open port");
+          setState(() {
+            _isPrinterConnected = false;
+            _printerStatus = "Port open failed";
+          });
+          return;
+        }
+
+        // Configure port with EP-300 settings
+        _addDebugMessage("Configuring with 9600,8,N,1");
+        try {
+          await _printerPort!.setDTR(true);
+          await _printerPort!.setRTS(true);
+
+          await _printerPort!.setPortParameters(
+              9600,
+              UsbPort.DATABITS_8,
+              UsbPort.STOPBITS_1,
+              UsbPort.PARITY_NONE
+          );
+
+          setState(() {
+            _isPrinterConnected = true;
+            _printerStatus = "Connected (Serial)";
+          });
+          _addDebugMessage("Printer connected via serial");
+        } catch (e) {
+          _addDebugMessage("Port configuration failed: $e");
+          setState(() {
+            _isPrinterConnected = false;
+            _printerStatus = "Configuration failed";
+          });
+        }
+      } catch (e) {
+        _addDebugMessage("UsbSerial approach failed: $e");
+        setState(() {
+          _isPrinterConnected = false;
+          _printerStatus = "Serial failed";
+        });
+      }
+    } catch (e) {
+      _addDebugMessage("Initialization error: $e");
+      setState(() {
+        _isPrinterConnected = false;
+        _printerStatus = "Init failed";
+      });
+    } finally {
+      setState(() {
+        _isPrinterInitializing = false;
+      });
+      _addDebugMessage("Initialization completed. Connected: $_isPrinterConnected");
+    }
+  }
+
+
+
+  // Helper method to handle text wrapping for narrow paper
+
+  Future<void> printDirectToThermalPrinter() async {
+    if (_isPrinting) {
+      _addDebugMessage("Print already in progress");
+      return;
+    }
+
+    setState(() {
+      _isPrinting = true;
+    });
+    _addDebugMessage("Starting print job");
+
+    try {
+
+      if (!_isPrinterConnected) {
+        _addDebugMessage("Printer not connected, initializing");
+        _showSnackBar("Connecting to printer...");
+        await _initPrinterConnection();
+
+        if (!_isPrinterConnected) {
+          _addDebugMessage("Failed to connect printer");
+          _showSnackBar("Could not connect to printer");
+          setState(() {
+            _isPrinting = false;
+          });
+          return;
+        }
+      }
+
+      _addDebugMessage("Preparing print data");
+      _showSnackBar("Printing...");
+
+      // Load capability profile
+      final profile = await CapabilityProfile.load();
+
+
+      final generator = Generator(PaperSize.mm58, profile);
+
+      // Initialize printer command buffer
+      List<int> bytes = [];
+
+      // Reset printer
+      bytes.addAll(generator.reset());
+
+      // Center alignment for header
+      bytes.addAll(
+          generator.setStyles(const PosStyles(align: PosAlign.center)));
+
+      // Print header
+      bytes.addAll(generator.text('BharatTeleClinic',
+          styles: const PosStyles(bold: true,
+              height: PosTextSize.size2,
+              width: PosTextSize.size2)));
+      bytes.addAll(generator.text('BharatTelePharma Pvt.Ltd.'));
+      bytes.addAll(generator.hr());
+
+      // Print doctor details
+      bytes.addAll(generator.text('Doctor: ${doctorName.trim()}'));
+      if (licenseNumber.isNotEmpty) {
+        bytes.addAll(generator.text('License: ${licenseNumber.trim()}'));
+      }
+
+      // Date and time
+      bytes.addAll(generator.text('Date: ${dateFormat.format(currentDate)}'));
+      bytes.addAll(generator.text('Time: ${timeFormat.format(currentDate)}'));
+      bytes.addAll(generator.hr());
+
+      // Left alignment for prescription details
+      bytes.addAll(generator.setStyles(const PosStyles(align: PosAlign.left)));
+
+      // Print medications header
+      bytes.addAll(
+          generator.text('MEDICATIONS', styles: const PosStyles(bold: true)));
+
+      // Print each medication
+      for (var prescription in prescriptions) {
+        // Drug name in bold
+        String drugName = prescription['drug_name']?.toString() ??
+            'Unknown Medication';
+        bytes.addAll(
+            generator.text(drugName, styles: const PosStyles(bold: true)));
+
+        // Add dosage information
+        if (prescription['dosage'] != null) {
+          String dosage = prescription['dosage']?.toString() ?? '';
+          String unit = prescription['unit']?.toString() ?? '';
+          bytes.addAll(generator.text('Dosage: $dosage $unit'));
+        }
+
+        String frequency = getFrequencyPattern(prescription['frequency']);
+        bytes.addAll(generator.text('Freq: $frequency'));
+
+        String duration = prescription['duration']?.toString() ?? '0';
+        bytes.addAll(generator.text('Duration: $duration days'));
+
+        // Handle long text fields with proper wrapping
+        String? instruction = prescription['instruction']?.toString();
+        if (instruction != null && instruction.isNotEmpty) {
+          addWrappedText(bytes, generator, 'Instruction:', instruction,
+              maxCharsPerLine: 24);
+        }
+
+        String? notes = prescription['notes']?.toString();
+        if (notes != null && notes.isNotEmpty) {
+          addWrappedText(
+              bytes, generator, 'Notes:', notes, maxCharsPerLine: 24);
+        }
+
+        // Separator between medications
+        bytes.addAll(generator.hr());
+      }
+
+
+      // Signature
+      bytes.addAll(generator.setStyles(const PosStyles(align: PosAlign.right)));
+      bytes.addAll(generator.text('Signature'));
+
+      // Try to print signature image if available
+      if (signatureUrl.isNotEmpty) {
+        try {
+          _addDebugMessage("Attempting to print signature image");
+
+          // Download signature image
+          final response = await http.get(
+            Uri.parse(signatureUrl),
+            // No authorization needed for CloudFront URLs
+          );
+
+          if (response.statusCode == 200) {
+            // Decode image
+            final img.Image? originalImage = img.decodeImage(response.bodyBytes);
+
+            if (originalImage != null) {
+              // Resize image to fit thermal printer width (max ~384 pixels for 58mm)
+              final img.Image resizedImage = img.copyResize(
+                originalImage,
+                width: 200, // Adjust based on your printer's capability
+                height: (originalImage.height * 200 / originalImage.width).round(),
+              );
+
+              // Convert to 1-bit black and white
+              final img.Image bwImage = img.copyResize(resizedImage, width: 200);
+
+              // Print signature label
+              bytes.addAll(generator.text('Doctor Signature:'));
+              bytes.addAll(generator.feed(1));
+
+              // Print image
+              bytes.addAll(generator.imageRaster(bwImage, align: PosAlign.right));
+              bytes.addAll(generator.feed(1));
+
+              _addDebugMessage("Signature image added to print data");
+            } else {
+              _addDebugMessage("Failed to decode signature image");
+              // Fallback to text signature
+              bytes.addAll(generator.text('Signature'));
+              bytes.addAll(generator.feed(2)); // Space for manual signature
+            }
+          } else {
+            _addDebugMessage("Failed to download signature image: ${response.statusCode}");
+            // Fallback to text signature
+            bytes.addAll(generator.text('Signature'));
+            bytes.addAll(generator.feed(2)); // Space for manual signature
+          }
+        } catch (e) {
+          _addDebugMessage("Error processing signature image: $e");
+          // Fallback to text signature
+          bytes.addAll(generator.text('Signature'));
+          bytes.addAll(generator.feed(2)); // Space for manual signature
+        }
+      } else {
+        // No signature URL, just print text
+        bytes.addAll(generator.text('Signature'));
+        bytes.addAll(generator.feed(2)); // Space for manual signature
+      }
+
+      bytes.addAll(generator.text('Dr. ${doctorName.trim()}'));
+
+
+      // Disclaimer and footer
+      bytes.addAll(
+          generator.setStyles(const PosStyles(align: PosAlign.center)));
+      bytes.addAll(generator.feed(1));
+
+      String disclaimer = "This prescription is issued based on a teleconsultation. Consult your doctor in case of adverse reactions.";
+      addWrappedText(bytes, generator, '', disclaimer, maxCharsPerLine: 24);
+
+      bytes.addAll(generator.feed(1));
+      bytes.addAll(generator.text(
+          'THANK YOU! VISIT AGAIN!', styles: const PosStyles(bold: true)));
+      bytes.addAll(generator.text('admin@bharatteleclinic.co'));
+      bytes.addAll(generator.text('+919581870076'));
+
+      // Feed paper and cut
+      bytes.addAll(generator.feed(3));
+      bytes.addAll(generator.cut());
+
+      // First try direct USB printing
+      _addDebugMessage("Sending data to printer (${bytes.length} bytes)");
+
+      // Use direct USB approach for most reliable printing
+      try {
+        const platform = MethodChannel('com.bharatteleclinic/usb_printer');
+
+        // First ensure we have the right device - mostly for logging purposes
+        if (_printerDevice == null) {
+          _addDebugMessage("No printer device selected");
+          throw Exception("No printer device selected");
+        }
+
+        _addDebugMessage(
+            "Sending to device VID:${_printerDevice!.vid}, PID:${_printerDevice!
+                .pid}");
+
+        final bool success = await platform.invokeMethod('printData', {
+          'vendorId': _printerDevice!.vid,
+          'productId': _printerDevice!.pid,
+          'data': Uint8List.fromList(bytes),
+        });
+
+        if (success) {
+          _addDebugMessage("Print successful via direct USB");
+          _showSnackBar("Printed successfully");
+        } else {
+          _addDebugMessage("Direct USB printing returned false");
+          throw Exception("Direct USB printing failed");
+        }
+      } catch (e) {
+        _addDebugMessage("Direct USB printing failed: $e");
+
+        // Fall back to serial port approach if available
+        if (_printerPort != null && _printerStatus.contains("Serial")) {
+          _addDebugMessage("Falling back to serial port printing");
+
+          try {
+            // Send data in chunks
+            const int CHUNK_SIZE = 256; // Smaller chunks for potentially limited buffer
+            final Uint8List data = Uint8List.fromList(bytes);
+
+            int totalChunks = (data.length / CHUNK_SIZE).ceil();
+
+            for (int i = 0; i < data.length; i += CHUNK_SIZE) {
+              int end = (i + CHUNK_SIZE < data.length) ? i + CHUNK_SIZE : data
+                  .length;
+              Uint8List chunk = data.sublist(i, end);
+
+              int chunkNumber = (i ~/ CHUNK_SIZE) + 1;
+              _addDebugMessage(
+                  "Sending chunk $chunkNumber of $totalChunks (${chunk
+                      .length} bytes)");
+
+              await _printerPort!.write(chunk);
+
+              // Longer delay between chunks
+              await Future.delayed(const Duration(milliseconds: 200));
+            }
+
+            _addDebugMessage("Print successful via serial port");
+            _showSnackBar("Printed successfully");
+          } catch (serialError) {
+            _addDebugMessage("Serial printing failed: $serialError");
+            _showSnackBar("Printing failed");
+          }
+        } else {
+          _showSnackBar("Printing failed. Please reconnect printer.");
+        }
+      }
+    } catch (e) {
+      _addDebugMessage("Print job failed: $e");
+      _showSnackBar("Print error: ${e.toString().split(',')[0]}");
+    } finally {
+      setState(() {
+        _isPrinting = false;
+      });
+      _addDebugMessage("Print job process ended");
+    }
+  }
+
+// Helper method to handle text wrapping for narrow paper
+  void addWrappedText(List<int> bytes, Generator generator, String label,
+      String text, {int maxCharsPerLine = 24}) {
+    // First add the label if provided
+    if (label.isNotEmpty) {
+      bytes.addAll(generator.text(label));
+    }
+
+    // Split long text into multiple lines
+    for (int i = 0; i < text.length; i += maxCharsPerLine) {
+      int end = (i + maxCharsPerLine < text.length) ? i + maxCharsPerLine : text
+          .length;
+
+      // Look for a space to break at if possible
+      if (end < text.length && text[end] != ' ') {
+        int lastSpace = text.substring(i, end).lastIndexOf(' ');
+        if (lastSpace > 0) {
+          end = i + lastSpace + 1;
+        }
+      }
+
+      // Add indentation for wrapped text
+      bytes.addAll(generator.text('  ${text.substring(i, end).trim()}'));
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text(
@@ -432,22 +869,20 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
           : SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          // crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
-
           children: [
             Card(
-              // elevation: 4,
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+
+
                     Text(
                       'Doctor: $doctorName',
                       style: const TextStyle(
                         fontSize: 13,
-                        // fontWeight: FontWeight.bold,
                         color: Color(0xFF243B6D),
                       ),
                     ),
@@ -529,31 +964,149 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
                 );
               },
             ),
+            // Add signature display section
+            if (signatureUrl.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Doctor Signature:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF243B6D),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 80,
+                        width: 200,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            signatureUrl,
+                            fit: BoxFit.contain,
+                            headers: {'Authorization': 'Bearer ${widget.token}'},
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                alignment: Alignment.center,
+                                child: const Text(
+                                  'Signature not available',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              );
+                            },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${doctorName.trim()}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: prescriptionData != null && prescriptionId != null
-      //       ? () => printPrescription(prescriptionData!, prescriptionId!)
-      //       : null, // Disable the button if data is missing
-      //   backgroundColor: Color(0xFF243B6D),
-      //   child: const Icon(Icons.print, color: Colors.white),
-      // ),
+
+
+
 
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _generatePrintPreview(),
-        backgroundColor: const Color(0xFF243B6D),
-        child: const Icon(Icons.print, color: Colors.white),
+        onPressed: () {
+          if (_isPrinting) {
+            _showSnackBar("Print job already in progress");
+            return;
+          }
+
+          if (!_isPrinterConnected) {
+            _showPrinterAlert("Printer Not Connected",
+                "Printer is not connected. Would you like to connect now?");
+          } else {
+            printDirectToThermalPrinter();
+          }
+        },
+        backgroundColor: _isPrinting
+            ? Colors.grey
+            : _isPrinterConnected
+            ? const Color(0xFF243B6D)
+            : Colors.orange,
+        child: _isPrinting
+            ? const SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        )
+            : Icon(
+            _isPrinterConnected ? Icons.print : Icons.print_disabled,
+            color: Colors.white
+        ),
       ),
-
-
-
-
-
     );
   }
 
+// Helper method for printer alerts
+  void _showPrinterAlert(String title, String message) {
+    if (!mounted) return;
 
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: Text(message),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _initPrinterConnection().then((_) {
+                  if (_isPrinterConnected) {
+                    printDirectToThermalPrinter();
+                  }
+                });
+              },
+              child: const Text('Connect'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 class CallPage extends StatefulWidget {
@@ -580,11 +1133,31 @@ class _CallPageState extends State<CallPage> {
   double bodyTemp = 0.0;
   late StreamSubscription sensorSubscription;
 
-
-  bool isMenuOpen = false; // Track if the menu is open
-
   // Add SensorApiService instance
   late SensorApiService _apiService;
+
+
+
+  //dr details
+  String doctorName = "";
+  String doctorQualification = "";
+  String doctorSpeciality = "";
+
+
+
+
+
+
+
+
+  ////need update
+  // String doctorImageUrl="";
+
+
+
+
+
+
 
   @override
   void initState() {
@@ -592,10 +1165,12 @@ class _CallPageState extends State<CallPage> {
 
     // Initialize the API service with token and session ID
     _apiService = SensorApiService(
-      baseUrl: baseapi, // Replace with your actual API URL
+      baseUrl: baseapi,
       token: widget.token,
       sessionId: widget.sessionid,
     );
+
+    _loadDoctorDetails(); //  load details
 
     SerialPortService().start(); // ✅ Start SerialPort service
     _startListeningToSensor();
@@ -607,6 +1182,34 @@ class _CallPageState extends State<CallPage> {
           () => bodyTemp,
     );
   }
+
+  Future<void> _loadDoctorDetails() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      doctorName = prefs.getString('doctor_name') ?? 'Doctor';
+      doctorQualification = prefs.getString('doctor_qualification') ?? '';
+      doctorSpeciality = prefs.getString('doctor_speciality') ?? '';
+
+
+
+
+
+      // doctorImageUrl = prefs.getString('doctorImageUrl') ?? '';
+
+
+
+
+
+
+
+
+
+
+
+
+    });
+  }
+
 
   void _startListeningToSensor() {
     sensorSubscription = SerialPortService().sensorDataStream.listen((data) {
@@ -620,7 +1223,7 @@ class _CallPageState extends State<CallPage> {
     });
   }
 
-  void ShowPrescriptionDialog() {
+  void showPrescriptionDialog() {
     if (mounted) {
       showDialog(
         context: context,
@@ -628,11 +1231,9 @@ class _CallPageState extends State<CallPage> {
           return AlertDialog(
             title: const Text(
               "Bharat Tele Clinic",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,color:Color(0xFF243B6D)),
-              textAlign: TextAlign.center, // Center-align the text
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF243B6D)),
+              textAlign: TextAlign.center,
             ),
-            // contentPadding: EdgeInsets.zero, // Removes default padding
-
             content: SizedBox(
               width: double.maxFinite,
               height: 300, // Adjust height as needed
@@ -656,43 +1257,134 @@ class _CallPageState extends State<CallPage> {
                   },
                   child: const Icon(
                     Icons.close, // Cross icon
-                    color: Colors.black, // Change color if needed
-                    size: 40, // Adjust size if necessary
+                    color: Colors.black,
+                    size: 40,
                   ),
                 ),
               ),
-
             ],
           );
         },
       );
     }
-
   }
+
   void _navigateToThankYouScreen() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => BookingConfirmationScreen(
           token: widget.token,
-          // Add any other parameters ThankYouPage needs
         ),
       ),
     );
   }
-
-  bool _showOptions = false;
 
   @override
   void dispose() {
     // Stop API service
     _apiService.stopSendingData();
 
-    sensorSubscription.cancel(); // ✅ Proper cleanup
+    // Cancel sensor subscription
+    sensorSubscription.cancel();
+
     super.dispose();
   }
 
+
+
+
+
   @override
   Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.shortestSide >= 700;
+    final topPadding = MediaQuery.of(context).padding.top + (isTablet ? 20 : 10);
+
+    Widget doctorInfoHeader() {
+      return Positioned(
+        top: topPadding,
+        left: isTablet ? 20 : 12,
+        right: isTablet ? null : null,
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: isTablet ? 500 : MediaQuery.of(context).size.width - 24,
+          ),
+          padding: EdgeInsets.all(isTablet ? 16 : 12),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 6,
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Doctor Image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  "https://example.com/image.jpg", // e.g., 'doctorImageUrl'
+                  width: isTablet ? 70 : 50,
+                  height: isTablet ? 70 : 50,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Icon(Icons.person, size: isTablet ? 70 : 50, color: Colors.white54),
+                ),
+              ),
+              SizedBox(width: 12),
+              // Doctor Name and Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      doctorName,
+                      softWrap: true,
+                      overflow: TextOverflow.visible,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: isTablet ? 20 : 16,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.none,
+                        shadows: const [
+                          Shadow(
+                            offset: Offset(0, 1),
+                            blurRadius: 2,
+                            color: Colors.black26,
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '$doctorQualification, $doctorSpeciality',
+                      softWrap: true,
+                      overflow: TextOverflow.visible,
+                      style: TextStyle(
+                        decoration: TextDecoration.none,
+                        fontSize: isTablet ? 16 : 13,
+                        color: Colors.white70,
+                        shadows: const [
+                          Shadow(
+                            offset: Offset(0, 1),
+                            blurRadius: 2,
+                            color: Colors.black26,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+
     return Stack(
       children: [
         ZegoUIKitPrebuiltCall(
@@ -724,16 +1416,16 @@ class _CallPageState extends State<CallPage> {
           ),
         ),
 
-        // ✅ Floating Hang-Up Button
+        // Floating Print Button
         Positioned(
           bottom: 5,
-          left: MediaQuery.of(context).size.width / 2 - 35, // Centering horizontally
+          left: MediaQuery.of(context).size.width / 2 - 35,
           child: Container(
-            width: 70, // Ensuring a perfect circle
-            height: 70, // Ensuring a perfect circle
+            width: 70,
+            height: 70,
             decoration: BoxDecoration(
-              shape: BoxShape.circle, // Making it circular
-              color: Colors.white, // Background color
+              shape: BoxShape.circle,
+              color: Colors.white,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.2),
@@ -745,116 +1437,19 @@ class _CallPageState extends State<CallPage> {
             ),
             child: IconButton(
               icon: const Icon(Icons.print, color: Color(0xFF243B6D)),
-              onPressed: ShowPrescriptionDialog,
+              onPressed: showPrescriptionDialog,
             ),
           ),
         ),
 
 
-        // NEW FLOATING ACTION BUTTON WITH POPUP MENU (bottom right)
+        //dr details
         Positioned(
-            bottom: 5,
-            right: 20,
-            child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-            // Options that appear when menu is open
-              if (_showOptions) ...[
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(6),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black26, blurRadius: 4),
-                        ],
-                      ),
-                      child: Text("Store", style: TextStyle(fontSize: 12,decoration: TextDecoration.none,color: Color(0xFF243B6D))),
-                    ),
-                    SizedBox(width: 8),
-                    FloatingActionButton(
-                      heroTag: 'store',
-                      mini: true,
-                      onPressed: () {
-                        print("Store clicked");
-                      },
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.store,color: Color(0xFF243B6D)),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10),
-
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(6),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black26, blurRadius: 4),
-                        ],
-                      ),
-                      child: Text("Other", style: TextStyle(fontSize: 12,decoration: TextDecoration.none,color: Color(0xFF243B6D))),
-                    ),
-                    SizedBox(width: 8),
-                    FloatingActionButton(
-                      heroTag: 'other',
-
-                      mini: true,
-                      onPressed: () {
-                        print("Other clicked");
-                      },
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.more_horiz,color: Color(0xFF243B6D)),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10),
-              ],
-
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    _showOptions ? Icons.close : Icons.send,
-                    color: Color(0xFF243B6D), // Match printer icon color
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _showOptions = !_showOptions;
-                    });
-                  },
-                ),
-              ),
-
-
-
-            ],
-            ),
-
+          top: 0,
+          left: 0,
+          right: 0,
+          child: doctorInfoHeader(),
         ),
-
 
 
       ],
@@ -862,7 +1457,7 @@ class _CallPageState extends State<CallPage> {
   }
 }
 
-/// ✅ Sensor Data Display Widget (Aligned at the Bottom Center)
+/// Sensor Data Display Widget
 class SensorDataWidget extends StatelessWidget {
   final double bloodOxygen;
   final double heartRate;
@@ -877,28 +1472,22 @@ class SensorDataWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      bottom: 90, // Adjust the position above the call button
-      left: 0,
-      right: 0,
-      child: Center(
-        child: SizedBox(
-          width: MediaQuery.of(context).size.width * 0.8, // ✅ Adjust width
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SensorCard(title: "Oxygen", value: "$bloodOxygen%", icon: Icons.bubble_chart, iconColor: Colors.blue,),
-              SensorCard(title: "Heart Rate", value: "$heartRate BPM", icon: Icons.favorite, iconColor: Colors.red,),
-              SensorCard(title: "Temp", value: "$bodyTemp °F", icon: Icons.thermostat, iconColor: Colors.orange,),
-            ],
-          ),
+    return Center(
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.8,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            SensorCard(title: "Oxygen", value: "$bloodOxygen%", icon: Icons.bubble_chart, iconColor: Colors.blue),
+            SensorCard(title: "Heart Rate", value: "$heartRate BPM", icon: Icons.favorite, iconColor: Colors.red),
+            SensorCard(title: "Temp", value: "$bodyTemp °F", icon: Icons.thermostat, iconColor: Colors.orange),
+          ],
         ),
       ),
     );
   }
 }
-
-/// ✅ Individual Sensor Card Widget
+/// Individual Sensor Card Widget
 class SensorCard extends StatelessWidget {
   final String title;
   final String value;
@@ -924,12 +1513,12 @@ class SensorCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             title,
-            style: const TextStyle(color: Colors.white70, fontSize: 12, decoration: TextDecoration.none,),
+            style: const TextStyle(color: Colors.white70, fontSize: 12, decoration: TextDecoration.none),
           ),
           const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, decoration: TextDecoration.none,),
+            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, decoration: TextDecoration.none),
           ),
         ],
       ),

@@ -751,8 +751,8 @@ class _PaymentScreenState extends State<pay> {
                         Image.network(
                           _qrCodeUrl!,
                           width: 520,
-                          height: 690,
-                          fit: BoxFit.cover,
+                          height: 620,
+                          fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
                               width: 450,
@@ -773,10 +773,10 @@ class _PaymentScreenState extends State<pay> {
 
                         // Add countdown timer to main screen if QR is generated
                         if (_qrCodeUrl != null && !_isTimedOut) ...[
-                          // const SizedBox(height: 15),
+                          const SizedBox(height: 15),
                           Center(
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                               child: Text(
                                 'Payment expires in ${_formatTime(_remainingSeconds)}',
                                 style: TextStyle(
@@ -824,7 +824,7 @@ class _PaymentScreenState extends State<pay> {
                           child: const Icon(
                             Icons.close,
                             color: Colors.red,
-                            size: 18,
+                            size: 12,
                           ),
                         ),
 
@@ -1012,7 +1012,7 @@ class _PaymentScreenState extends State<pay> {
 
   void _handlePaymentSuccess() {
 
-     // Cancel countdown timer on successful payment
+    // Cancel countdown timer on successful payment
     _countdownTimer?.cancel();
     _paymentCheckTimer?.cancel();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1046,9 +1046,9 @@ class _PaymentScreenState extends State<pay> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              const SizedBox(height: 15,),
+              // const SizedBox(height: 15,),
               const TopSection(), // This adds the top header
-              const SizedBox(height: 10),
+              // const SizedBox(height: 10),
               Center(
                 child: Card(
                   shape: RoundedRectangleBorder(
@@ -1221,7 +1221,6 @@ class _PaymentScreenState extends State<pay> {
     );
   }
 }
-
 
 
 

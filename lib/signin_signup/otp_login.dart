@@ -8,6 +8,7 @@ import '../APIServices/base_api.dart';
 import '../Paymentgetway/pay.dart';
 import '../screen_saver/screen_saveradd.dart';
 import '../topSection/topsection.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 
 class OtpLoginScreen extends StatefulWidget {
@@ -25,6 +26,56 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
   bool isLoading = false;
+
+
+  bool _isChecked = false;
+
+  void _showTermsDialog() async {
+    bool? result = await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        content: const SingleChildScrollView(
+          child: Text(
+              'By proceeding, I confirm that I am voluntarily opting for a telemedicine consultation. I understand that this consultation will be conducted via video conferencing with a Registered Medical Practitioner (RMP). I acknowledge the limitations of telemedicine, including the absence of physical examination, and I consent to receive medical advice and prescriptions electronically. I am aware that my medical information will be kept confidential in accordance with applicable laws and regulations.'),
+        ),
+        actions: [
+          ElevatedButton(
+            child: const Text('Proceed to Consultation'),
+            onPressed: () {
+              Navigator.of(context).pop(true);
+              Future.delayed(const Duration(milliseconds: 200), () {
+                setState(() {
+                  _isChecked = true;
+                  _validate();
+                });
+              });
+            },
+          ),
+        ],
+      ),
+    );
+
+    if (result != true) {
+      setState(() {
+        _isChecked = false;
+      });
+    }
+  }
+
+  void _validate() async {
+    if (!_isChecked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please agree to the Terms and Conditions")),
+      );
+    } else {
+      await sendOtp(); // Make sure sendOtp() is async
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Consent Send: $_isChecked")),
+      );
+
+    }
+  }
+
 
   Future<void> sendOtp() async {
     final phoneNumber = phoneController.text.trim();
@@ -46,10 +97,16 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       return;
     }
 
+    if (!_isChecked) {
+      showSnackbar('Please accept the terms and conditions');
+      return;
+    }
+
     setState(() => isLoading = true);
     try {
       final response = await http.post(
-        Uri.parse("$baseapi/tab/tab-signup"), // Updated API endpoint
+        Uri.parse("$baseapi/tab/tab-signup"),
+        // Updated API endpoint
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
           if (sessionCookie != null) "Cookie": sessionCookie,
@@ -58,6 +115,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
           "fullname": name,
           "number": phoneNumber,
           "user_type":"3",
+          "consent": _isChecked.toString(), // Send terms acceptance status
         },
       );
 
@@ -65,6 +123,11 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       print(response.body);
       print("Response Status Code: ${response.statusCode}");
       print("Response Body: ${response.body}");
+
+
+      print("Sending consent: ${_isChecked.toString()}");
+      print("Consent checkbox is checked: $_isChecked");
+
 
 
       // Store session cookie from response
@@ -75,6 +138,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       }
 
       if (response.statusCode == 200) {
+
         showSnackbar('OTP sent successfully');
 
         // Navigate to OTP Verification Screen
@@ -105,6 +169,22 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
     );
   }
 
+  void _openTerms() async {
+    final Uri url = Uri.parse('https://bharatteleclinic.co/company/terms_condition');
+    if (!await launchUrl(url, mode: LaunchMode.inAppWebView)) {
+      throw Exception('Could not launch $url');
+    }
+  }
+
+  void _openPrivacy() async {
+    final Uri url = Uri.parse('https://bharatteleclinic.co/company/privacy');
+    if (!await launchUrl(url, mode: LaunchMode.inAppWebView)) {
+      throw Exception('Could not launch $url');
+    }
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -114,9 +194,9 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 20,),
+              // const SizedBox(height: 20,),
               const TopSection(),
-              const SizedBox(height: 20),
+              // const SizedBox(height: 20),
               const Padding(
                 padding: EdgeInsets.all(10.0),
                 child: Align(
@@ -204,13 +284,70 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(height: 20),
-              const Center(
-                child: Text(
-                  "A Verification code will be send to this number.",
-                  style: TextStyle(fontSize: 12,color: Colors.grey),
-                ),
+
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Checkbox(
+                    value: _isChecked,
+                    onChanged: (_) {
+                      _showTermsDialog(); // Optional
+                    },
+                    activeColor: Colors.black,
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Accept',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Wrap(
+                          children: [
+                            const Text(
+                              'By logging in, you agree to our ',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            GestureDetector(
+                              onTap: _openTerms,
+                              child: const Text(
+                                'Terms and Conditions',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                            const Text(
+                              ' & ',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            GestureDetector(
+                              onTap: _openPrivacy,
+                              child: const Text(
+                                'Privacy Policy',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
+
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -218,9 +355,8 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                   // Get OTP Button
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: isLoading ? null : sendOtp,
+                      onPressed: isLoading ? null : _validate,
                       style: ElevatedButton.styleFrom(
-                        elevation: 4,
                         backgroundColor: Colors.red,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -273,7 +409,6 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                                     Navigator.of(context).pop(); // Go back
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    elevation: 4,
                                     backgroundColor: Colors.red, // **Red background**
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(5),
@@ -316,6 +451,17 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 class OtpVerificationScreen extends StatefulWidget {
@@ -575,7 +721,19 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           if (mounted) {
             await checkDoctorAvailability(token, widget.speciality);  // Call availability check
 
-//this payment screen open QR code
+////////////////////////////this payment screen open QR code
+//             Navigator.pushReplacement(
+//               context,
+//               MaterialPageRoute(builder: (context) => PaymentScreen(
+//                 name: widget.name,
+//                 phoneNumber: widget.phoneNumber,
+//                 token: token,
+//                 price:widget.price,
+//                 specialityId: widget.speciality,
+//
+//               )),
+//             );
+//simulation code
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => pay(
@@ -583,22 +741,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 phoneNumber: widget.phoneNumber,
                 token: token,
                 price:widget.price,
-                specialityId: widget.speciality,
-              )),
+                specialityId: '',
+
+
+              ),),
             );
-
-
-
-            //simulation code
-            // Navigator.pushReplacement(
-            //   context,
-            //   MaterialPageRoute(builder: (context) => pay(
-            //     name: widget.name,
-            //     phoneNumber: widget.phoneNumber,
-            //     token: token,
-            //     price:widget.price,
-            //   ),),
-            // );
           }
         } else {
           showSnackbar("OTP verification failed: Missing access token or token_id");
@@ -766,7 +913,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     child: Text(
                       canResendOtp ? "Resend OTP" : "Resend OTP $countdownSeconds sec",
                       style: TextStyle(
-                        color: canResendOtp ? Colors.blue : Colors.grey,fontSize: 12
+                          color: canResendOtp ? Colors.blue : Colors.grey,fontSize: 12
                       ),
                     ),
                   )
@@ -779,7 +926,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 ElevatedButton(
                   onPressed: isLoading ? null : verifyOtp, // ✅ Calls verifyOtp()
                   style: ElevatedButton.styleFrom(
-                    elevation: 4,
                     backgroundColor: Colors.red,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

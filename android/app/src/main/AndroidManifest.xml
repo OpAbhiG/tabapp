@@ -28,6 +28,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-feature android:name="android.hardware.usb.host" />
+    <uses-permission android:name="android.permission.USB_PERMISSION" />
 
 
     <application
@@ -48,9 +50,9 @@
                  while the Flutter UI initializes. After that, this theme continues
                  to determine the Window background behind the Flutter UI. -->
             <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme"
+                />
 
             <meta-data
                 android:name="com.google.firebase.messaging.default_notification_channel_id"
@@ -60,8 +62,8 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-                <!-- Don't delete the meta-data below.
-             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <!-- Don't delete the meta-data below.
+     This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
 
 
         <meta-data
@@ -69,11 +71,11 @@
             android:value="2" />
 
 
-<!--        <receiver-->
-<!--            android:name="com.hiennv.flutter_callkit_incoming.CallkitIncomingBroadcastReceiver"-->
-<!--            android:exported="true"-->
-<!--            tools:replace="android:exported">-->
-<!--        </receiver>-->
+        <!--        <receiver-->
+        <!--            android:name="com.hiennv.flutter_callkit_incoming.CallkitIncomingBroadcastReceiver"-->
+        <!--            android:exported="true"-->
+        <!--            tools:replace="android:exported">-->
+        <!--        </receiver>-->
 
     </application>
     <!-- Required to query activities that can process text, see:

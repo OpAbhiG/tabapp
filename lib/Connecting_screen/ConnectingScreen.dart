@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../APIServices/base_api.dart';
 import '../VideoCall/call_page.dart';
 import '../main.dart';
@@ -27,7 +28,6 @@ class ConnectingScreen extends StatefulWidget {
 
 class _ConnectingScreenState extends State<ConnectingScreen>
     with SingleTickerProviderStateMixin {
-
   late AnimationController _controller;
   int _quoteIndex = 0;
   final List<String> quotes = [
@@ -83,11 +83,11 @@ class _ConnectingScreenState extends State<ConnectingScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 4),
     )..repeat();
 
     // Start a timer to change the quote every 2 seconds
-    Timer.periodic(const Duration(seconds: 2), (timer) {
+    Timer.periodic(const Duration(seconds: 4), (timer) {
       if (mounted) {
         setState(() {
           _quoteIndex = (_quoteIndex + 1) % quotes.length;
@@ -106,7 +106,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
     await _getSessionId(); // This will call _requestConsultation when session ID is ready
 
     // Start periodic status check timer
-    statusCheckTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    statusCheckTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (sessionId != null && sessionId!.isNotEmpty) {
         _checkConsultationStatus(sessionId!);
       }
@@ -165,7 +165,36 @@ class _ConnectingScreenState extends State<ConnectingScreen>
               if (jsonResponse.containsKey('meeting_id') &&
                   jsonResponse.containsKey('accepted_doctor_id')) {
                 meetingId = jsonResponse['meeting_id'];
+
+
+                ////dr details
+                // Save doctor details to SharedPreferences
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                var doctor = jsonResponse['doctor_details'];
+                await prefs.setString('doctor_name', doctor['full_name']);
+                await prefs.setString('doctor_qualification', doctor['qualification']);
+                await prefs.setString('doctor_speciality', doctor['speciality']);
+
+
+
+
+
+
+
+                // await prefs.setString('doctorImageUrl', doctor['doctorImageUrl']);
+
+
+
+
+
+
+
+
+
+
                 print("[STATUS SUCCESS] Accepted by doctor. Meeting ID: $meetingId");
+
+
 
                 // Navigate to call screen
                 if (mounted) {
@@ -366,34 +395,138 @@ class _ConnectingScreenState extends State<ConnectingScreen>
   }
 
 
+  // Future<void> _requestConsultation(String sessionId) async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   String? enterpriseId = prefs.getString('enterprise_id');
+  //   if (enterpriseId == null) {
+  //     // Handle error or prompt login again
+  //     print('Enterprise ID not found');
+  //     return;
+  //   }
+  //   if (sessionId.isEmpty) {
+  //     print("[CONSULTATION ERROR] session_id is empty!");
+  //     return;
+  //   }
+  //   try {
+  //     Position? position = await _getCurrentLocation();
+  //     if (position == null) {
+  //       print("[LOCATION ERROR] Unable to get current location");
+  //       return;
+  //     }
+  //     var request = http.MultipartRequest(
+  //       'POST',
+  //       Uri.parse("$baseapi/patient/request_consultation"),
+  //     );
+  //
+  //
+  //     request.fields['enterprise_id'] = enterpriseId;
+  //
+  //
+  //     request.fields['latitude'] = position.latitude.toString();
+  //     request.fields['longitude'] = position.longitude.toString();
+  //     request.fields['speciality'] = widget.speciality;
+  //
+  //     String mappedSpecialityId = specialityMapping[widget.speciality] ?? "1";
+  //     request.fields['speciality_id'] = mappedSpecialityId;
+  //     request.fields['session_id'] = sessionId;
+  //     request.headers['Authorization'] = 'Bearer ${widget.token}';
+  //
+  //
+  //
+  //
+  //
+  //     var response = await request.send();
+  //     var responseData = await response.stream.bytesToString();
+  //
+  //     print("[CONSULTATION RESPONSE] Status: ${response.statusCode}");
+  //     print("[CONSULTATION RESPONSE] Body: $responseData");
+  //
+  //     if (response.statusCode == 200) {
+  //       var jsonResponse = jsonDecode(responseData);
+  //       print(responseData);
+  //       // Start checking status immediately after requesting consultation
+  //       _checkConsultationStatus(sessionId);
+  //     } else {
+  //       print("[CONSULTATION ERROR] $responseData");
+  //     }
+  //   } catch (e) {
+  //     print("[CONSULTATION CRITICAL ERROR] $e");
+  //   }
+  // }
+
+
   Future<void> _requestConsultation(String sessionId) async {
+
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? enterpriseId = prefs.getString('enterprise_id');
+    print("🔍 Checking enterprise_id: $enterpriseId");
+
+
+    // ✅ Better debugging for enterprise_id
+    print("🔍 Checking enterprise_id: $enterpriseId");
+
+    if (enterpriseId == null || enterpriseId.isEmpty) {
+      print('❌ Enterprise ID not found in SharedPreferences');
+
+      // Show all saved keys for debugging
+      Set<String> keys = prefs.getKeys();
+      print("📱 Available SharedPreferences keys: $keys");
+
+      // Try to get all string values for debugging
+      for (String key in keys) {
+        dynamic value = prefs.get(key);
+        print("🔑 $key: $value");
+      }
+
+      // Show error to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please login again. Enterprise ID not found.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
     if (sessionId.isEmpty) {
       print("[CONSULTATION ERROR] session_id is empty!");
       return;
     }
-
     try {
       Position? position = await _getCurrentLocation();
       if (position == null) {
         print("[LOCATION ERROR] Unable to get current location");
         return;
       }
-
       var request = http.MultipartRequest(
         'POST',
         Uri.parse("$baseapi/patient/request_consultation"),
       );
 
+
+      request.fields['enterprise_id'] = enterpriseId;
+
+
       request.fields['latitude'] = position.latitude.toString();
       request.fields['longitude'] = position.longitude.toString();
-
       request.fields['speciality'] = widget.speciality;
 
       String mappedSpecialityId = specialityMapping[widget.speciality] ?? "1";
       request.fields['speciality_id'] = mappedSpecialityId;
       request.fields['session_id'] = sessionId;
-
       request.headers['Authorization'] = 'Bearer ${widget.token}';
+
+
+      // ✅ Debug print the request data
+      print("🚀 REQUEST DATA:");
+      print("Enterprise ID: $enterpriseId");
+      print("Session ID: $sessionId");
+      print("Speciality: ${widget.speciality}");
+      print("Speciality ID: $mappedSpecialityId");
+      print("Location: ${position.latitude}, ${position.longitude}");
+
 
       var response = await request.send();
       var responseData = await response.stream.bytesToString();
@@ -403,15 +536,17 @@ class _ConnectingScreenState extends State<ConnectingScreen>
 
       if (response.statusCode == 200) {
         var jsonResponse = jsonDecode(responseData);
+        print("✅ Consultation request successful: $responseData");
         // Start checking status immediately after requesting consultation
         _checkConsultationStatus(sessionId);
       } else {
-        print("[CONSULTATION ERROR] $responseData");
+        print("❌ [CONSULTATION ERROR] $responseData");
       }
     } catch (e) {
       print("[CONSULTATION CRITICAL ERROR] $e");
     }
   }
+
 
   // Handle Wait button click
   void _handleWaitButtonClick() async {
@@ -420,8 +555,8 @@ class _ConnectingScreenState extends State<ConnectingScreen>
     // Check if 5 minutes (300 seconds) have passed since last click
     if (lastWaitClickTime != null) {
       final difference = now.difference(lastWaitClickTime!).inSeconds;
-      if (difference >= 300) {
-        // Reset count after 5 minutes
+      if (difference >= 180) {
+        // Reset count after 3 minutes
         // waitButtonClicks = 0;
       }
     }
@@ -465,79 +600,14 @@ class _ConnectingScreenState extends State<ConnectingScreen>
     }
   }
   // Navigate to support
-  void _navigateToSupport() async{
-
-    bool apiCallSuccess =await _requestSupport();
-
+  void _navigateToSupport() {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => SupportScreen(
-          token: widget.token,
-          sessionid: sessionId!,
-          supportRequestSent: apiCallSuccess,
-
-        ),
+        builder: (context) => SupportScreen(token: widget.token, sessionid: sessionId!,),
       ),
     );
   }
-
-
-  // New function to call support API
-  Future<bool> _requestSupport() async {
-    if (sessionId == null || sessionId!.isEmpty) {
-      print("[SUPPORT ERROR] session_id is empty!");
-      return false;
-    }
-
-    try {
-      print("[SUPPORT] Sending support request...");
-
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse("$baseapi/tab/request_for_support"),
-      );
-
-      // Add required field
-      request.fields['session_id'] = sessionId!;
-
-      // Add authorization header
-      request.headers['Authorization'] = 'Bearer ${widget.token}';
-
-      var response = await request.send();
-      var responseData = await response.stream.bytesToString();
-
-      print("[SUPPORT RESPONSE] Status: ${response.statusCode}");
-      print("[SUPPORT RESPONSE] Body: $responseData");
-
-      if (response.statusCode == 200) {
-        var jsonResponse = jsonDecode(responseData);
-
-        if (jsonResponse.containsKey('message') &&
-            jsonResponse['message'] == "Support request created successfully") {
-          print("[SUPPORT SUCCESS] Request created successfully");
-
-          // You can handle ticket_id if needed
-          if (jsonResponse.containsKey('ticket_id')) {
-            String ticketId = jsonResponse['ticket_id'];
-            print("[SUPPORT] Ticket ID: $ticketId");
-          }
-
-          return true;
-        } else {
-          print("[SUPPORT ERROR] Unexpected response: $responseData");
-          return false;
-        }
-      } else {
-        print("[SUPPORT ERROR] Failed: $responseData");
-        return false;
-      }
-    } catch (e) {
-      print("[SUPPORT CRITICAL ERROR] $e");
-      return false;
-    }
-  }
-
 
   @override
   void dispose() {
@@ -572,7 +642,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green,
+                    color: Colors.red.withOpacity(0.8),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -737,7 +807,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
                   for (int i = 0; i < quotes.length; i++)
                     AnimatedOpacity(
                       opacity: _quoteIndex == i ? 1.0 : 0.0,
-                      duration: const Duration(seconds: 1),
+                      duration: const Duration(milliseconds: 120),
                       child: Container(
                         width: screenWidth * 0.8,
                         child: Text(
@@ -769,12 +839,9 @@ class _ConnectingScreenState extends State<ConnectingScreen>
 class SupportScreen extends StatefulWidget {
   final String token;
   final String sessionid;
-  final bool supportRequestSent;
-
 
   const SupportScreen({Key? key, required this.token,
-  required this.sessionid,
-    this.supportRequestSent = false,
+    required this.sessionid
   }) : super(key: key);
 
   @override
@@ -783,22 +850,10 @@ class SupportScreen extends StatefulWidget {
 class _SupportScreenState extends State<SupportScreen> {
   int _secondsRemaining = 7;
   late Timer _timer;
-  String? _supportMessage;
-
-
 
   @override
   void initState() {
     super.initState();
-
-    // If support request was not sent during navigation, try to send it now
-    if (!widget.supportRequestSent) {
-      _requestSupport();
-    } else {
-      setState(() {
-        _supportMessage = "Support request sent successfully";
-      });
-    }
 
     // Start countdown timer
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -819,66 +874,6 @@ class _SupportScreenState extends State<SupportScreen> {
     });
   }
 
-  // Support API request function
-  Future<void> _requestSupport() async {
-    if (widget.sessionid.isEmpty) {
-      setState(() {
-        _supportMessage = "Error: Session ID is missing";
-      });
-      return;
-    }
-
-    try {
-      print("[SUPPORT] Sending support request...");
-
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse("$baseapi/tab/request_for_support"),
-      );
-
-      // Add required field
-      request.fields['session_id'] = widget.sessionid;
-
-      // Add authorization header
-      request.headers['Authorization'] = 'Bearer ${widget.token}';
-
-      var response = await request.send();
-      var responseData = await response.stream.bytesToString();
-
-      print("[SUPPORT RESPONSE] Status: ${response.statusCode}");
-      print("[SUPPORT RESPONSE] Body: $responseData");
-
-      if (response.statusCode == 200) {
-        var jsonResponse = jsonDecode(responseData);
-
-        if (jsonResponse.containsKey('message') &&
-            jsonResponse['message'] == "Support request created successfully") {
-          setState(() {
-            _supportMessage = "Support request sent successfully";
-          });
-
-          // You can handle ticket_id if needed
-          if (jsonResponse.containsKey('ticket_id')) {
-            String ticketId = jsonResponse['ticket_id'];
-            print("[SUPPORT] Ticket ID: $ticketId");
-          }
-        } else {
-          setState(() {
-            _supportMessage = "Unexpected response from server";
-          });
-        }
-      } else {
-        setState(() {
-          _supportMessage = "Failed to send support request";
-        });
-      }
-    } catch (e) {
-      print("[SUPPORT CRITICAL ERROR] $e");
-      setState(() {
-        _supportMessage = "Error: $e";
-      });
-    }
-  }
   @override
   void dispose() {
     _timer.cancel();
@@ -918,22 +913,6 @@ class _SupportScreenState extends State<SupportScreen> {
             //   },
             //   child: Text("Contact Support"),
             // ),
-
-            if (_supportMessage != null) ...[
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  _supportMessage!,
-                  style: const TextStyle(fontSize: 16, color: Colors.green),
-                ),
-              ),
-            ],
-
             const SizedBox(height: 30),
             Container(
               padding: const EdgeInsets.all(12),

@@ -8,7 +8,7 @@ class TopSection extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         double screenWidth = constraints.maxWidth;
-        bool isSmallScreen = screenWidth < 400; // Adjust for smaller screens
+        bool isSmallScreen = screenWidth < 800; // Adjust for smaller screens
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
