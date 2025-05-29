@@ -767,7 +767,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => NoDoctorScreen()),
+        MaterialPageRoute(builder: (context) => const NoDoctorScreen()),
       );
     }
   }
@@ -968,6 +968,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
 // **Screen for when no doctor is available**
 class NoDoctorScreen extends StatefulWidget {
+  const NoDoctorScreen({super.key});
+
   @override
   _NoDoctorScreenState createState() => _NoDoctorScreenState();
 }

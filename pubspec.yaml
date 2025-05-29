@@ -124,6 +124,7 @@ dependencies:
 
 
 
+  cached_network_image: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

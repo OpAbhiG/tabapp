@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 //v2
 
 class SpecialitiesScreen extends StatefulWidget {
-  SpecialitiesScreen({super.key});
+  const SpecialitiesScreen({super.key});
 
   @override
   State<SpecialitiesScreen> createState() => _SpecialitiesScreenState();

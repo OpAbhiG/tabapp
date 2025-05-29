@@ -23,7 +23,7 @@ Widget customAvatarBuilder(
       ),
     ),
     progressIndicatorBuilder: (context, url, downloadProgress) =>
-        CircularProgressIndicator(value: downloadProgress.progress, color: Color(0xFF243B6D),),
+        CircularProgressIndicator(value: downloadProgress.progress, color: const Color(0xFF243B6D),),
     errorWidget: (context, url, error) {
       // Log the error or user information as needed
       ZegoLoggerService.logInfo('Error loading avatar for user: ${user?.id}');

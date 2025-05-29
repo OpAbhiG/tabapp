@@ -808,7 +808,7 @@ class _ConnectingScreenState extends State<ConnectingScreen>
                     AnimatedOpacity(
                       opacity: _quoteIndex == i ? 1.0 : 0.0,
                       duration: const Duration(milliseconds: 120),
-                      child: Container(
+                      child: SizedBox(
                         width: screenWidth * 0.8,
                         child: Text(
                           quotes[i],
@@ -840,9 +840,9 @@ class SupportScreen extends StatefulWidget {
   final String token;
   final String sessionid;
 
-  const SupportScreen({Key? key, required this.token,
+  const SupportScreen({super.key, required this.token,
     required this.sessionid
-  }) : super(key: key);
+  });
 
   @override
   _SupportScreenState createState() => _SupportScreenState();

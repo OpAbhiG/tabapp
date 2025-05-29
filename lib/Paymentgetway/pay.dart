@@ -521,8 +521,8 @@ class _PaymentScreenState extends State<pay> {
                 TextButton(
                   onPressed: () {
                     dialogActive = false;
-                    if (countdownTimer != null && countdownTimer!.isActive) {
-                      countdownTimer!.cancel();
+                    if (countdownTimer != null && countdownTimer.isActive) {
+                      countdownTimer.cancel();
                     }
 
                     if (!countdownController.isClosed) {
@@ -566,8 +566,8 @@ class _PaymentScreenState extends State<pay> {
                   ),
                   onPressed: () {
                     dialogActive = false;
-                    if (countdownTimer != null && countdownTimer!.isActive) {
-                      countdownTimer!.cancel();
+                    if (countdownTimer != null && countdownTimer.isActive) {
+                      countdownTimer.cancel();
                     }
 
                     if (!countdownController.isClosed) {
@@ -712,7 +712,7 @@ class _PaymentScreenState extends State<pay> {
 
                       // Only show expiration dialog if widget is still mounted
                       if (mounted) {
-                        Future.delayed(Duration(milliseconds: 300), () {
+                        Future.delayed(const Duration(milliseconds: 300), () {
                           if (mounted) {
                             _showExpirationDialogWithAutoNavigate();
                           }

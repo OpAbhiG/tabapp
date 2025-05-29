@@ -10,7 +10,6 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:PatientTabletApp/thankyoupage/thankyoupage.dart';
 import 'package:usb_serial/usb_serial.dart';
-import 'dart:typed_data';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
@@ -757,17 +756,17 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
 
           try {
             // Send data in chunks
-            const int CHUNK_SIZE = 256; // Smaller chunks for potentially limited buffer
+            const int chunkSize = 256; // Smaller chunks for potentially limited buffer
             final Uint8List data = Uint8List.fromList(bytes);
 
-            int totalChunks = (data.length / CHUNK_SIZE).ceil();
+            int totalChunks = (data.length / chunkSize).ceil();
 
-            for (int i = 0; i < data.length; i += CHUNK_SIZE) {
-              int end = (i + CHUNK_SIZE < data.length) ? i + CHUNK_SIZE : data
+            for (int i = 0; i < data.length; i += chunkSize) {
+              int end = (i + chunkSize < data.length) ? i + chunkSize : data
                   .length;
               Uint8List chunk = data.sublist(i, end);
 
-              int chunkNumber = (i ~/ CHUNK_SIZE) + 1;
+              int chunkNumber = (i ~/ chunkSize) + 1;
               _addDebugMessage(
                   "Sending chunk $chunkNumber of $totalChunks (${chunk
                       .length} bytes)");
@@ -1018,7 +1017,7 @@ class _TabPrescriptionScreenState extends State<TabPrescriptionScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${doctorName.trim()}',
+                        doctorName.trim(),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -1333,7 +1332,7 @@ class _CallPageState extends State<CallPage> {
                   errorBuilder: (context, error, stackTrace) => Icon(Icons.person, size: isTablet ? 70 : 50, color: Colors.white54),
                 ),
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               // Doctor Name and Details
               Expanded(
                 child: Column(
@@ -1357,7 +1356,7 @@ class _CallPageState extends State<CallPage> {
                         ],
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       '$doctorQualification, $doctorSpeciality',
                       softWrap: true,

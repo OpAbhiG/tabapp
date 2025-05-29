@@ -34,7 +34,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
 
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => LoginScreen()),
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
           (route) => false,
     );
 
@@ -211,7 +211,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
                             onPressed: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => SpecialitiesScreen()),
+                                MaterialPageRoute(builder: (context) => const SpecialitiesScreen()),
                               );
                             },
                             style: ElevatedButton.styleFrom(

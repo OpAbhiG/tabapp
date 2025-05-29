@@ -80,7 +80,7 @@ class _SplashScreenState extends State<SplashScreen> {
     } else {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => LoginScreen()),
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
     }
   }
@@ -120,6 +120,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -344,13 +346,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
 
 
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 GestureDetector(
                   onTap: () {
                     // Replace 'SignInScreen()' with your actual screen class
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => SpecialitiesScreen()),
+                      MaterialPageRoute(builder: (context) => const SpecialitiesScreen()),
                     );
                   },
                   child: Text(
