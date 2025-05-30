@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:PatientTabletApp/APIServices/base_api.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
 import '../SerialCommunication/USB_oxymitter_sensor.dart';
+import '../VideoCallDisaScreen/VdoCallDisScreen.dart';
+import '../check connection/connectivityProvider.dart';
 import 'common.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -13,6 +16,13 @@ import 'package:usb_serial/usb_serial.dart';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
+
+
+import 'package:connectivity_plus/connectivity_plus.dart';
+
+
+
+
 
 class SensorApiService {
   final String baseUrl;
@@ -1143,6 +1153,10 @@ class _CallPageState extends State<CallPage> {
   String doctorSpeciality = "";
 
 
+  ///check internet connect
+  bool _isConnected = true;
+  late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
+
 
 
 
@@ -1161,6 +1175,8 @@ class _CallPageState extends State<CallPage> {
   @override
   void initState() {
     super.initState();
+
+
 
     // Initialize the API service with token and session ID
     _apiService = SensorApiService(
@@ -1181,6 +1197,8 @@ class _CallPageState extends State<CallPage> {
           () => bodyTemp,
     );
   }
+
+
 
   Future<void> _loadDoctorDetails() async {
     final prefs = await SharedPreferences.getInstance();
@@ -1286,6 +1304,8 @@ class _CallPageState extends State<CallPage> {
     // Cancel sensor subscription
     sensorSubscription.cancel();
 
+    Provider.of<ConnectivityProvider>(context, listen: false).disposeStream();
+
     super.dispose();
   }
 
@@ -1295,6 +1315,13 @@ class _CallPageState extends State<CallPage> {
 
   @override
   Widget build(BuildContext context) {
+
+    final isConnected = Provider.of<ConnectivityProvider>(context).isConnected;
+
+    if (!isConnected) {
+      return const VideoCallDisconnectedScreen(); // custom widget to show offline message
+    }
+
     final isTablet = MediaQuery.of(context).size.shortestSide >= 700;
     final topPadding = MediaQuery.of(context).padding.top + (isTablet ? 20 : 10);
 
@@ -1524,3 +1551,7 @@ class SensorCard extends StatelessWidget {
     );
   }
 }
+
+
+
+

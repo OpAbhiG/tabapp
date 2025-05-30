@@ -115,6 +115,8 @@ dependencies:
 
   url_launcher: ^6.3.1
   image: ^4.5.4
+  connectivity_plus: ^6.1.4
+  provider: ^6.1.5
 
 
 

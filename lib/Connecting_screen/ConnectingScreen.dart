@@ -6,9 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../APIServices/base_api.dart';
 import '../VideoCall/call_page.dart';
+import '../VideoCallDisaScreen/NoInternetScreen.dart';
+import '../VideoCallDisaScreen/VdoCallDisScreen.dart';
+import '../check connection/connectivityProvider.dart';
 import '../main.dart';
 import '../screen_saver/screen_saveradd.dart';
 
@@ -613,11 +617,20 @@ class _ConnectingScreenState extends State<ConnectingScreen>
   void dispose() {
     _controller.dispose();
     statusCheckTimer?.cancel();
+    Provider.of<ConnectivityProvider>(context, listen: false).disposeStream();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+
+    final isConnected = Provider.of<ConnectivityProvider>(context).isConnected;
+
+    if (!isConnected) {
+      return const NoInternetScreen(); // custom widget
+    }
+
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
 

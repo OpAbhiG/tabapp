@@ -1,5 +1,13 @@
+import 'dart:async';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../APIServices/base_api.dart';
+import '../VideoCall/call_page.dart';
+import '../VideoCallDisaScreen/NoInternetScreen.dart';
+import '../VideoCallDisaScreen/VdoCallDisScreen.dart';
+import '../check connection/connectivityProvider.dart';
 import '../signin_signup/otp_login.dart';
 import '../topSection/topsection.dart';
 import 'dart:convert';
@@ -18,6 +26,9 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
   bool _hasShownHint = false;
+
+  late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
+  bool _isConnected = true;
 
   @override
   void initState() {
@@ -47,11 +58,15 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
         });
       }
     });
-  }
 
+
+  }
   @override
   void dispose() {
     _animationController.dispose();
+    _connectivitySubscription.cancel();
+    Provider.of<ConnectivityProvider>(context, listen: false).disposeStream();
+
     super.dispose();
   }
 
@@ -105,6 +120,12 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    final isConnected = Provider.of<ConnectivityProvider>(context).isConnected;
+
+    if (!isConnected) {
+      return const NoInternetScreen(); // custom widget
+    }
+
     return Scaffold(
       body: SafeArea(
         child: FutureBuilder<List<Map<String, dynamic>>>(

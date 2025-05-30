@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 import '../APIServices/base_api.dart';
 import '../Paymentgetway/pay.dart';
+import '../VideoCallDisaScreen/NoInternetScreen.dart';
+import '../check connection/connectivityProvider.dart';
 import '../screen_saver/screen_saveradd.dart';
 import '../topSection/topsection.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -31,16 +34,35 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
   bool _isChecked = false;
 
   void _showTermsDialog() async {
-    bool? result = await showDialog(
+    bool? result = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+
         content: const SingleChildScrollView(
-          child: Text(
-              'By proceeding, I confirm that I am voluntarily opting for a telemedicine consultation. I understand that this consultation will be conducted via video conferencing with a Registered Medical Practitioner (RMP). I acknowledge the limitations of telemedicine, including the absence of physical examination, and I consent to receive medical advice and prescriptions electronically. I am aware that my medical information will be kept confidential in accordance with applicable laws and regulations.'),
+          child: Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Text(
+              'By proceeding, I confirm that I am voluntarily opting for a telemedicine consultation.\n\n'
+                  'I understand that this consultation will be conducted via video conferencing with a Registered Medical Practitioner (RMP). '
+                  'I acknowledge the limitations of telemedicine, including the absence of a physical examination, and I consent to receive medical advice and prescriptions electronically.\n\n'
+                  'I am aware that my medical information will be kept confidential in accordance with applicable laws and regulations.',
+              style: TextStyle(fontSize: 16, height: 1.5),
+            ),
+          ),
         ),
         actions: [
+
           ElevatedButton(
-            child: const Text('Proceed to Consultation'),
+            style: ElevatedButton.styleFrom(
+              elevation: 4,
+              backgroundColor: Colors.blue,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             onPressed: () {
               Navigator.of(context).pop(true);
               Future.delayed(const Duration(milliseconds: 200), () {
@@ -50,6 +72,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                 });
               });
             },
+            child: const Text('Proceed to Consultation',style: TextStyle(color: Colors.white),),
           ),
         ],
       ),
@@ -182,6 +205,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       throw Exception('Could not launch $url');
     }
   }
+
 
 
 
@@ -407,6 +431,8 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                                   onPressed: () {
                                     Navigator.of(context).pop(); // Close dialog
                                     Navigator.of(context).pop(); // Go back
+                                    Navigator.of(context).pop(); // Go back
+
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.red, // **Red background**
@@ -513,6 +539,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       }
     });
   }
+
   void showDialogBox(String message) {
     showDialog(
       context: context,
@@ -720,20 +747,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
           if (mounted) {
             await checkDoctorAvailability(token, widget.speciality);  // Call availability check
-
-////////////////////////////this payment screen open QR code
-//             Navigator.pushReplacement(
-//               context,
-//               MaterialPageRoute(builder: (context) => PaymentScreen(
-//                 name: widget.name,
-//                 phoneNumber: widget.phoneNumber,
-//                 token: token,
-//                 price:widget.price,
-//                 specialityId: widget.speciality,
-//
-//               )),
-//             );
-//simulation code
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => pay(
@@ -782,6 +795,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       body: Center(
         child: Container(
@@ -852,6 +866,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                         Navigator.of(context).pop(); // Navigate back
                                         Navigator.of(context).pop(); // Navigate back
                                         Navigator.of(context).pop(); // Navigate back
+
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.red, // Button color

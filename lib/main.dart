@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:PatientTabletApp/check%20connection/connectivityProvider.dart';
 
 import 'package:PatientTabletApp/screen_saver/screen_saveradd.dart';
 import 'package:PatientTabletApp/sliding_Card/Sliding_Card.dart';
@@ -8,10 +9,13 @@ import 'package:flutter/services.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 
 import 'APIServices/base_api.dart';
+import 'VideoCall/call_page.dart';
+import 'VideoCallDisaScreen/NoInternetScreen.dart';
 
 final String localUserID = math.Random().nextInt(10000).toString();
 
@@ -21,8 +25,14 @@ void main() async{
   await Hive.openBox('userBox'); // Open box once at startup
   await Firebase.initializeApp();
   await requestPermissions();
-  runApp(const MyApp());
-}class MyApp extends StatelessWidget {
+  runApp(
+    ChangeNotifierProvider(
+        create: (_) => ConnectivityProvider(),
+        child:const MyApp(),
+      ),
+  );
+}
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
@@ -171,55 +181,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // Future<void> _verifyOtpAndLogin() async {
-  //   if (!_formKey.currentState!.validate()) return;
-  //
-  //   final String phone = _userIdController.text.trim();
-  //   final String otp = _passwordController.text.trim();
-  //
-  //   setState(() => _isLoading = true);
-  //
-  //   try {
-  //     SharedPreferences prefs = await SharedPreferences.getInstance();
-  //     final savedEnterpriseId = prefs.getString('enterprise_id');
-  //
-  //     final url = Uri.parse("$baseapi/user/enter_verify_otp");
-  //     final response = await http.post(
-  //       url,
-  //       headers: {"Content-Type": "application/json"},
-  //       body: jsonEncode({
-  //         "number": phone,
-  //         "otp": otp,
-  //         "enterprise_id": savedEnterpriseId,
-  //       }),
-  //     );
-  //
-  //     final data = jsonDecode(response.body);
-  //     setState(() => _isLoading = false);
-  //
-  //     final Map<String, dynamic> dcode = jsonDecode(response.body);
-  //
-  //     print("Decoded response: $dcode");
-  //     print("Response status: ${response.statusCode}");
-  //     print("Response body: ${response.body}");
-  //
-  //     if (response.statusCode == 200 && data['access_token'] != null) {
-  //       await prefs.setBool('isLoggedIn', true);
-  //       await prefs.setString('access_token', data['access_token']);
-  //
-  //       Navigator.pushReplacement(
-  //         context,
-  //         MaterialPageRoute(builder: (_) => const ImageCarousel()),
-  //       );
-  //     } else {
-  //       _showSnackBar("$data");
-  //     }
-  //   } catch (e) {
-  //     setState(() => _isLoading = false);
-  //     _showSnackBar("Error: $e");
-  //   }
-  // }
-
   Future<void> _verifyOtpAndLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -319,6 +280,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isConnected = Provider.of<ConnectivityProvider>(context).isConnected;
+
+    if (!isConnected) {
+      return const NoInternetScreen(); // custom widget to show offline message
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SafeArea(
@@ -474,6 +441,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _userIdController.dispose();
     _passwordController.dispose();
+    Provider.of<ConnectivityProvider>(context, listen: false).disposeStream();
     super.dispose();
   }
 }

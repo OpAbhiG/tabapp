@@ -726,7 +726,7 @@ class _PaymentScreenState extends State<pay> {
                 });
               });
 
-              return PopScope(
+                           return PopScope(
                 onPopInvoked: (didPop) {
                   // Mark dialog as inactive and cancel timer
                   dialogActive = false;
@@ -824,7 +824,7 @@ class _PaymentScreenState extends State<pay> {
                           child: const Icon(
                             Icons.close,
                             color: Colors.red,
-                            size: 12,
+                            size: 18,
                           ),
                         ),
 

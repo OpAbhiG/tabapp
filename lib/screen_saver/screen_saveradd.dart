@@ -83,6 +83,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
 
       appBar: AppBar(
         centerTitle: true,
+        automaticallyImplyLeading: false,
         title: Image.asset(
           'assets/btclogo.png',
           height: 60, // Adjust height as needed
