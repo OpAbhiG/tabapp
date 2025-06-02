@@ -210,6 +210,8 @@ class _ConnectingScreenState extends State<ConnectingScreen>
                         id: meetingId!,
                         sessionid: sessionId,
                         token: widget.token,
+
+
                       ),
                     ),
                   );

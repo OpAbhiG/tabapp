@@ -14,10 +14,475 @@ import '../topSection/topsection.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 
+// class OtpLoginScreen extends StatefulWidget {
+//   final String speciality;
+//   final String price;
+//
+//
+//   const OtpLoginScreen({super.key,
+//     required this.speciality, required this.price});
+//
+//   @override
+//   _OtpLoginScreenState createState() => _OtpLoginScreenState();
+// }
+// class _OtpLoginScreenState extends State<OtpLoginScreen> {
+//   final TextEditingController phoneController = TextEditingController();
+//   final TextEditingController nameController = TextEditingController();
+//   bool isLoading = false;
+//
+//
+//   bool _isChecked = false;
+//
+//   void _showTermsDialog() async {
+//     bool? result = await showDialog<bool>(
+//       context: context,
+//       builder: (_) => AlertDialog(
+//         shape: RoundedRectangleBorder(
+//           borderRadius: BorderRadius.circular(20),
+//         ),
+//
+//         content: const SingleChildScrollView(
+//           child: Padding(
+//             padding: EdgeInsets.all(8.0),
+//             child: Text(
+//               'By proceeding, I confirm that I am voluntarily opting for a telemedicine consultation.\n\n'
+//                   'I understand that this consultation will be conducted via video conferencing with a Registered Medical Practitioner (RMP). '
+//                   'I acknowledge the limitations of telemedicine, including the absence of a physical examination, and I consent to receive medical advice and prescriptions electronically.\n\n'
+//                   'I am aware that my medical information will be kept confidential in accordance with applicable laws and regulations.',
+//               style: TextStyle(fontSize: 16, height: 1.5),
+//             ),
+//           ),
+//         ),
+//         actions: [
+//
+//           ElevatedButton(
+//             style: ElevatedButton.styleFrom(
+//               elevation: 4,
+//               backgroundColor: Colors.blue,
+//               shape: RoundedRectangleBorder(
+//                 borderRadius: BorderRadius.circular(10),
+//               ),
+//             ),
+//             onPressed: () {
+//               Navigator.of(context).pop(true);
+//               Future.delayed(const Duration(milliseconds: 200), () {
+//                 setState(() {
+//                   _isChecked = true;
+//                   _validate();
+//                 });
+//               });
+//             },
+//             child: const Text('Proceed to Consultation',style: TextStyle(color: Colors.white),),
+//           ),
+//         ],
+//       ),
+//     );
+//
+//     if (result != true) {
+//       setState(() {
+//         _isChecked = false;
+//       });
+//     }
+//   }
+//
+//   void _validate() async {
+//     if (!_isChecked) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(content: Text("Please agree to the Terms and Conditions")),
+//       );
+//     } else {
+//       await sendOtp(); // Make sure sendOtp() is async
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text("Consent Send: $_isChecked")),
+//       );
+//
+//     }
+//   }
+//
+//
+//   Future<void> sendOtp() async {
+//     final phoneNumber = phoneController.text.trim();
+//     final name = nameController.text.trim();
+//
+//     var sessionBox = await Hive.openBox('sessionBox');
+//     final sessionCookie = sessionBox.get('session_cookie');
+//
+//
+//     final Map<String, String> headers = {
+//       "Content-Type": "application/x-www-form-urlencoded",
+//       if (sessionCookie != null) "Cookie": sessionCookie,
+//     };
+//
+//     print(sessionCookie);
+//
+//     if (phoneNumber.isEmpty || phoneNumber.length != 10) {
+//       showSnackbar('Enter a valid 10-digit phone number');
+//       return;
+//     }
+//
+//     if (!_isChecked) {
+//       showSnackbar('Please accept the terms and conditions');
+//       return;
+//     }
+//
+//     setState(() => isLoading = true);
+//     try {
+//       final response = await http.post(
+//         Uri.parse("$baseapi/tab/tab-signup"),
+//         // Updated API endpoint
+//         headers: {
+//           "Content-Type": "application/x-www-form-urlencoded",
+//           if (sessionCookie != null) "Cookie": sessionCookie,
+//         },
+//         body: {
+//           "fullname": name,
+//           "number": phoneNumber,
+//           "user_type":"3",
+//           "consent": _isChecked.toString(), // Send terms acceptance status
+//         },
+//       );
+//
+//       final data = jsonDecode(response.body);
+//       print(response.body);
+//       print("Response Status Code: ${response.statusCode}");
+//       print("Response Body: ${response.body}");
+//
+//
+//       print("Sending consent: ${_isChecked.toString()}");
+//       print("Consent checkbox is checked: $_isChecked");
+//
+//
+//
+//       // Store session cookie from response
+//       String? setCookie = response.headers['set-cookie'];
+//       if (setCookie != null) {
+//         print("Storing session cookie: $setCookie");
+//         await sessionBox.put('session_cookie', setCookie);
+//       }
+//
+//       if (response.statusCode == 200) {
+//
+//         showSnackbar('OTP sent successfully');
+//
+//         // Navigate to OTP Verification Screen
+//         Navigator.push(
+//           context,
+//           MaterialPageRoute(
+//             builder: (context) => OtpVerificationScreen(
+//               phoneNumber: phoneNumber,
+//               speciality: widget.speciality,
+//               price: widget.price,
+//               name: name,
+//             ),
+//           ),
+//         );
+//       } else {
+//         showSnackbar(data["message"] ?? 'Failed to send OTP');
+//       }
+//     } catch (e) {
+//       showSnackbar('Error: ${e.toString()}');
+//     } finally {
+//       setState(() => isLoading = false);
+//     }
+//   }
+//
+//   void showSnackbar(String message) {
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(content: Text(message), duration: const Duration(seconds: 3)),
+//     );
+//   }
+//
+//   void _openTerms() async {
+//     final Uri url = Uri.parse('https://bharatteleclinic.co/company/terms_condition');
+//     if (!await launchUrl(url, mode: LaunchMode.inAppWebView)) {
+//       throw Exception('Could not launch $url');
+//     }
+//   }
+//
+//   void _openPrivacy() async {
+//     final Uri url = Uri.parse('https://bharatteleclinic.co/company/privacy');
+//     if (!await launchUrl(url, mode: LaunchMode.inAppWebView)) {
+//       throw Exception('Could not launch $url');
+//     }
+//   }
+//
+//
+//
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       body: SafeArea(
+//         child: SingleChildScrollView(
+//           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.stretch,
+//             children: [
+//               // const SizedBox(height: 20,),
+//               const TopSection(),
+//               // const SizedBox(height: 20),
+//               const Padding(
+//                 padding: EdgeInsets.all(10.0),
+//                 child: Align(
+//                   alignment: Alignment.centerLeft,
+//                   child: Column(
+//                     crossAxisAlignment: CrossAxisAlignment.start,
+//                     children: [
+//                       Text(
+//                         "Consult with Doctor",
+//                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+//                       ),
+//                       SizedBox(height: 8),
+//                       Text(
+//                         "Speciality",
+//                         style: TextStyle(fontSize: 15),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ),
+//               Container(
+//                 padding: const EdgeInsets.all(15),
+//                 decoration: BoxDecoration(
+//                   color: Colors.blue.shade50,
+//                   borderRadius: BorderRadius.circular(12),
+//                 ),
+//                 child: Row(
+//                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                   children: [
+//                     Row(
+//                       children: [
+//                         const Icon(Icons.check_circle, color: Colors.blueAccent),
+//                         const SizedBox(width: 10),
+//                         Text(
+//                           widget.speciality,
+//                           style: const TextStyle(
+//                               fontSize: 16, fontWeight: FontWeight.bold,color: Colors.black),
+//                         ),
+//                       ],
+//                     ),
+//                     Text(
+//                       widget.price,
+//                       style: const TextStyle(
+//                           fontSize: 16,
+//                           fontWeight: FontWeight.bold,
+//                           color: Colors.green),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//
+//               const SizedBox(height: 20),
+//               TextFormField(
+//                 controller: nameController,
+//                 keyboardType: TextInputType.name,
+//                 decoration: const InputDecoration(
+//                   labelText: 'Patient Name',
+//                   hintText: 'Enter patient name for prescription',
+//                   hintStyle: TextStyle(fontSize: 10, color: Colors.grey),
+//                   floatingLabelBehavior: FloatingLabelBehavior.auto, // Label moves up on focus
+//                   border: OutlineInputBorder(), // Optional: Adds a border
+//                   focusedBorder: OutlineInputBorder(
+//                     borderSide: BorderSide(color: Colors.blue, width: 2), // Highlight on focus
+//                   ),
+//                   enabledBorder: OutlineInputBorder(
+//                     borderSide: BorderSide(color: Colors.grey, width: 1),
+//                   ),
+//                 ),
+//               ),
+//               const SizedBox(height: 20),
+//               TextFormField(
+//                 controller: phoneController,
+//                 keyboardType: TextInputType.phone,
+//                 decoration: const InputDecoration(
+//                   labelText: 'Mobile Number',
+//                   hintText: 'eg.0123456789',
+//                   hintStyle: TextStyle(fontSize: 10, color: Colors.grey),
+//                   floatingLabelBehavior: FloatingLabelBehavior.auto, // Label moves up on focus
+//                   border: OutlineInputBorder(), // Adds a border around the input
+//                   focusedBorder: OutlineInputBorder(
+//                     borderSide: BorderSide(color: Colors.blue, width: 2), // Highlight on focus
+//                   ),
+//                   enabledBorder: OutlineInputBorder(
+//                     borderSide: BorderSide(color: Colors.grey, width: 1),
+//                   ),
+//                 ),
+//               ),
+//
+//               const SizedBox(height: 20),
+//
+//               Row(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   Checkbox(
+//                     value: _isChecked,
+//                     onChanged: (_) {
+//                       _showTermsDialog(); // Optional
+//                     },
+//                     activeColor: Colors.black,
+//                   ),
+//                   Expanded(
+//                     child: Column(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       children: [
+//                         const Text(
+//                           'Accept',
+//                           style: TextStyle(
+//                             color: Colors.black,
+//                             fontWeight: FontWeight.w500,
+//                             fontSize: 16,
+//                           ),
+//                         ),
+//                         const SizedBox(height: 2),
+//                         Wrap(
+//                           children: [
+//                             const Text(
+//                               'By logging in, you agree to our ',
+//                               style: TextStyle(color: Colors.grey),
+//                             ),
+//                             GestureDetector(
+//                               onTap: _openTerms,
+//                               child: const Text(
+//                                 'Terms and Conditions',
+//                                 style: TextStyle(
+//                                   color: Colors.grey,
+//                                   decoration: TextDecoration.underline,
+//                                 ),
+//                               ),
+//                             ),
+//                             const Text(
+//                               ' & ',
+//                               style: TextStyle(color: Colors.grey),
+//                             ),
+//                             GestureDetector(
+//                               onTap: _openPrivacy,
+//                               child: const Text(
+//                                 'Privacy Policy',
+//                                 style: TextStyle(
+//                                   color: Colors.grey,
+//                                   decoration: TextDecoration.underline,
+//                                 ),
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//
+//               const SizedBox(height: 20),
+//               Row(
+//                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                 children: [
+//                   // Get OTP Button
+//                   Expanded(
+//                     child: ElevatedButton(
+//                       onPressed: isLoading ? null : _validate,
+//                       style: ElevatedButton.styleFrom(
+//                         backgroundColor: Colors.red,
+//                         padding: const EdgeInsets.symmetric(vertical: 14),
+//                         shape: RoundedRectangleBorder(
+//                           borderRadius: BorderRadius.circular(8),
+//                         ),
+//                       ),
+//                       child: isLoading
+//                           ? const CircularProgressIndicator()
+//                           : const Text(
+//                         'Continue',
+//                         style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+//                       ),
+//                     ),
+//                   ),
+//
+//                   const SizedBox(width: 10), // Space between buttons
+//                   // Cancel Button
+//                   Expanded(
+//                     child: ElevatedButton(
+//                       onPressed: () {
+//                         showDialog(
+//                           context: context,
+//                           builder: (BuildContext context) {
+//                             return AlertDialog(
+//                               shape: RoundedRectangleBorder(
+//                                 borderRadius: BorderRadius.circular(10),
+//                               ),
+//                               title: const Text(
+//                                 "Cancel Confirmation",
+//                                 style: TextStyle(fontWeight: FontWeight.bold),
+//                               ),
+//                               content: const Text(
+//                                 "Are you sure you want to cancel? Your progress will not be saved.",
+//                                 style: TextStyle(color: Colors.black87),
+//                               ),
+//                               actions: [
+//                                 /// **Stay Button**
+//                                 TextButton(
+//                                   onPressed: () => Navigator.of(context).pop(), // Close dialog
+//                                   child: const Text(
+//                                     "Stay",
+//                                     style: TextStyle(color: Colors.green, fontSize: 16),
+//                                   ),
+//                                 ),
+//
+//                                 /// **Confirm Cancel Button (Red Background)**
+//                                 ElevatedButton(
+//                                   onPressed: () {
+//                                     Navigator.of(context).pop(); // Close dialog
+//                                     Navigator.of(context).pop(); // Go back
+//                                     Navigator.of(context).pop(); // Go back
+//
+//                                   },
+//                                   style: ElevatedButton.styleFrom(
+//                                     backgroundColor: Colors.red, // **Red background**
+//                                     shape: RoundedRectangleBorder(
+//                                       borderRadius: BorderRadius.circular(5),
+//                                     ),
+//                                   ),
+//                                   child: const Text(
+//                                     "Cancel",
+//                                     style: TextStyle(color: Colors.white, fontSize: 16),
+//                                   ),
+//                                 ),
+//                               ],
+//                             );
+//                           },
+//                         );
+//                       },
+//                       style: ElevatedButton.styleFrom(
+//                         backgroundColor: Colors.white, // **Same as TextButton**
+//                         padding: const EdgeInsets.symmetric(vertical: 14),
+//                         shape: RoundedRectangleBorder(
+//                           borderRadius: BorderRadius.circular(8),
+//                         ),
+//                       ),
+//                       child: const Text(
+//                         'Cancel',
+//                         style: TextStyle(
+//                           color: Colors.red,
+//                           fontSize: 16,
+//                           fontWeight: FontWeight.bold,
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+//
+
+
 class OtpLoginScreen extends StatefulWidget {
   final String speciality;
   final String price;
-
 
   const OtpLoginScreen({super.key,
     required this.speciality, required this.price});
@@ -25,13 +490,15 @@ class OtpLoginScreen extends StatefulWidget {
   @override
   _OtpLoginScreenState createState() => _OtpLoginScreenState();
 }
+
 class _OtpLoginScreenState extends State<OtpLoginScreen> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
+  final TextEditingController ageController = TextEditingController();
+
   bool isLoading = false;
-
-
   bool _isChecked = false;
+  String selectedGender = '';
 
   void _showTermsDialog() async {
     bool? result = await showDialog<bool>(
@@ -40,7 +507,6 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-
         content: const SingleChildScrollView(
           child: Padding(
             padding: EdgeInsets.all(8.0),
@@ -54,7 +520,6 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
           ),
         ),
         actions: [
-
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               elevation: 4,
@@ -91,32 +556,39 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
         const SnackBar(content: Text("Please agree to the Terms and Conditions")),
       );
     } else {
-      await sendOtp(); // Make sure sendOtp() is async
+      await sendOtp();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Consent Send: $_isChecked")),
       );
-
     }
   }
-
 
   Future<void> sendOtp() async {
     final phoneNumber = phoneController.text.trim();
     final name = nameController.text.trim();
+    final age = ageController.text.trim();
 
     var sessionBox = await Hive.openBox('sessionBox');
     final sessionCookie = sessionBox.get('session_cookie');
 
-
-    final Map<String, String> headers = {
-      "Content-Type": "application/x-www-form-urlencoded",
-      if (sessionCookie != null) "Cookie": sessionCookie,
-    };
-
-    print(sessionCookie);
-
+    // Validation
     if (phoneNumber.isEmpty || phoneNumber.length != 10) {
       showSnackbar('Enter a valid 10-digit phone number');
+      return;
+    }
+
+    if (name.isEmpty) {
+      showSnackbar('Please enter patient name');
+      return;
+    }
+
+    if (age.isEmpty || int.tryParse(age) == null || int.parse(age) < 1 || int.parse(age) > 120) {
+      showSnackbar('Please enter a valid age (1-120)');
+      return;
+    }
+
+    if (selectedGender.isEmpty) {
+      showSnackbar('Please select gender');
       return;
     }
 
@@ -129,7 +601,6 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
     try {
       final response = await http.post(
         Uri.parse("$baseapi/tab/tab-signup"),
-        // Updated API endpoint
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
           if (sessionCookie != null) "Cookie": sessionCookie,
@@ -137,8 +608,10 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
         body: {
           "fullname": name,
           "number": phoneNumber,
-          "user_type":"3",
-          "consent": _isChecked.toString(), // Send terms acceptance status
+          "user_type": "3",
+          "age": age,
+          "gender": selectedGender.toLowerCase(),
+          "consent": _isChecked.toString(),
         },
       );
 
@@ -148,12 +621,18 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       print("Response Body: ${response.body}");
 
 
-      print("Sending consent: ${_isChecked.toString()}");
-      print("Consent checkbox is checked: $_isChecked");
+
+    print("----- 📤 SENDING OTP REQUEST -----");
+    print("➡️ URL: $baseapi/tab/tab-signup");
+    print("----- 📥 RESPONSE RECEIVED -----");
+    print("⬅️ Status Code: ${response.statusCode}");
+    print("⬅️ Headers: ${response.headers}");
+    debugPrint("⬅️ Body: ${response.body}", wrapWidth: 1024);
 
 
 
-      // Store session cookie from response
+
+    // Store session cookie from response
       String? setCookie = response.headers['set-cookie'];
       if (setCookie != null) {
         print("Storing session cookie: $setCookie");
@@ -161,7 +640,6 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       }
 
       if (response.statusCode == 200) {
-
         showSnackbar('OTP sent successfully');
 
         // Navigate to OTP Verification Screen
@@ -206,9 +684,6 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
     }
   }
 
-
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -218,9 +693,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // const SizedBox(height: 20,),
               const TopSection(),
-              // const SizedBox(height: 20),
               const Padding(
                 padding: EdgeInsets.all(10.0),
                 child: Align(
@@ -257,7 +730,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                         Text(
                           widget.speciality,
                           style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold,color: Colors.black),
+                              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
                         ),
                       ],
                     ),
@@ -273,6 +746,8 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
               ),
 
               const SizedBox(height: 20),
+
+              // Patient Name Field
               TextFormField(
                 controller: nameController,
                 keyboardType: TextInputType.name,
@@ -280,17 +755,20 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                   labelText: 'Patient Name',
                   hintText: 'Enter patient name for prescription',
                   hintStyle: TextStyle(fontSize: 10, color: Colors.grey),
-                  floatingLabelBehavior: FloatingLabelBehavior.auto, // Label moves up on focus
-                  border: OutlineInputBorder(), // Optional: Adds a border
+                  floatingLabelBehavior: FloatingLabelBehavior.auto,
+                  border: OutlineInputBorder(),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.blue, width: 2), // Highlight on focus
+                    borderSide: BorderSide(color: Colors.blue, width: 2),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.grey, width: 1),
                   ),
                 ),
               ),
+
               const SizedBox(height: 20),
+
+              // Mobile Number Field
               TextFormField(
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
@@ -298,10 +776,10 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                   labelText: 'Mobile Number',
                   hintText: 'eg.0123456789',
                   hintStyle: TextStyle(fontSize: 10, color: Colors.grey),
-                  floatingLabelBehavior: FloatingLabelBehavior.auto, // Label moves up on focus
-                  border: OutlineInputBorder(), // Adds a border around the input
+                  floatingLabelBehavior: FloatingLabelBehavior.auto,
+                  border: OutlineInputBorder(),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.blue, width: 2), // Highlight on focus
+                    borderSide: BorderSide(color: Colors.blue, width: 2),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.grey, width: 1),
@@ -311,13 +789,79 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
 
               const SizedBox(height: 20),
 
+              // Age and Gender Row
+              Row(
+                children: [
+                  // Age Field
+                  Expanded(
+                    flex: 1,
+                    child: TextFormField(
+                      controller: ageController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Age',
+                        hintText: 'Enter age',
+                        hintStyle: TextStyle(fontSize: 10, color: Colors.grey),
+                        floatingLabelBehavior: FloatingLabelBehavior.auto,
+                        border: OutlineInputBorder(),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.blue, width: 2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey, width: 1),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 15),
+
+                  // Gender Dropdown
+                  Expanded(
+                    flex: 2,
+                    child: DropdownButtonFormField<String>(
+                      value: selectedGender.isEmpty ? null : selectedGender,
+                      decoration: const InputDecoration(
+                        labelText: 'Gender',
+                        floatingLabelBehavior: FloatingLabelBehavior.auto,
+                        border: OutlineInputBorder(),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.blue, width: 2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey, width: 1),
+                        ),
+                      ),
+                      hint: const Text(
+                        'Select Gender',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      items: ['Male', 'Female', 'Other'].map((String gender) {
+                        return DropdownMenuItem<String>(
+                          value: gender,
+                          child: Text(gender),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedGender = newValue ?? '';
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // Terms and Conditions Checkbox
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Checkbox(
                     value: _isChecked,
                     onChanged: (_) {
-                      _showTermsDialog(); // Optional
+                      _showTermsDialog();
                     },
                     activeColor: Colors.black,
                   ),
@@ -373,10 +917,12 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
               ),
 
               const SizedBox(height: 20),
+
+              // Continue and Cancel Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Get OTP Button
+                  // Continue Button
                   Expanded(
                     child: ElevatedButton(
                       onPressed: isLoading ? null : _validate,
@@ -388,7 +934,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                         ),
                       ),
                       child: isLoading
-                          ? const CircularProgressIndicator()
+                          ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
                         'Continue',
                         style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
@@ -396,7 +942,8 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                     ),
                   ),
 
-                  const SizedBox(width: 10), // Space between buttons
+                  const SizedBox(width: 10),
+
                   // Cancel Button
                   Expanded(
                     child: ElevatedButton(
@@ -417,25 +964,21 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                                 style: TextStyle(color: Colors.black87),
                               ),
                               actions: [
-                                /// **Stay Button**
                                 TextButton(
-                                  onPressed: () => Navigator.of(context).pop(), // Close dialog
+                                  onPressed: () => Navigator.of(context).pop(),
                                   child: const Text(
                                     "Stay",
                                     style: TextStyle(color: Colors.green, fontSize: 16),
                                   ),
                                 ),
-
-                                /// **Confirm Cancel Button (Red Background)**
                                 ElevatedButton(
                                   onPressed: () {
-                                    Navigator.of(context).pop(); // Close dialog
-                                    Navigator.of(context).pop(); // Go back
-                                    Navigator.of(context).pop(); // Go back
-
+                                    Navigator.of(context).pop();
+                                    Navigator.of(context).pop();
+                                    Navigator.of(context).pop();
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red, // **Red background**
+                                    backgroundColor: Colors.red,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(5),
                                     ),
@@ -451,7 +994,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white, // **Same as TextButton**
+                        backgroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -469,22 +1012,21 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                   ),
                 ],
               ),
-
             ],
           ),
         ),
       ),
     );
   }
+
+  @override
+  void dispose() {
+    phoneController.dispose();
+    nameController.dispose();
+    ageController.dispose();
+    super.dispose();
+  }
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -691,6 +1233,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     try {
       final Uri apiUrl = Uri.parse("$baseapi/tab/verify-otp");
 
+
+
+
+      print("📤 Starting OTP Verification Request");
+      print("➡️ Endpoint: $apiUrl");
+      print("➡️ Entered OTP: $otp");
+
+
+
       // Retrieve stored session cookie using Hive
       var sessionBox = await Hive.openBox('sessionBox');
       final sessionCookie = sessionBox.get('session_cookie');
@@ -705,11 +1256,24 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         "otp": otp,
       };
 
+
+
+      print("📦 Request Headers: $headers");
+      print("📦 Request Body: $body");
+
+
       final response = await http.post(
         apiUrl,
         headers: headers,
         body: body,
       );
+
+
+      print("📥 Response Received:");
+      print("⬅️ Status Code: ${response.statusCode}");
+      debugPrint("⬅️ Body: ${response.body}", wrapWidth: 1024);
+      print("⬅️ Headers: ${response.headers}");
+
 
       // Store session cookie from response if present
       String? setCookie = response.headers['set-cookie'];
@@ -738,12 +1302,22 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           String token = data["access_token"];
           int tokenId = data["token_id"];
 
+
+          print("✅ OTP Verified Successfully!");
+          print("🔐 Access Token: $token");
+          print("🆔 Token ID: $tokenId");
+
+
           var userBox = await Hive.openBox('userBox');
           await userBox.put('authToken', token);
           await userBox.put('tokenId', tokenId);  // Store token_id
 
-          print("Token Stored: $token");
-          print("Token ID Stored: $tokenId");
+
+          final dataa = jsonDecode(response.body);
+          print(dataa);
+          print(response.body);
+          print("Response Status Code: ${response.statusCode}");
+          print("Response Body: ${response.body}");
 
           if (mounted) {
             await checkDoctorAvailability(token, widget.speciality);  // Call availability check
@@ -914,6 +1488,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
+
               const SizedBox(height: 15),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

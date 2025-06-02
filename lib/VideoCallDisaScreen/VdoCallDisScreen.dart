@@ -1,9 +1,129 @@
+import 'dart:convert';
+
 import 'package:PatientTabletApp/topSection/topsection.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import '../APIServices/base_api.dart';
 
 
-class VideoCallDisconnectedScreen extends StatelessWidget {
-  const VideoCallDisconnectedScreen({super.key});
+class VideoCallDisconnectedScreen extends StatefulWidget {
+  final String token;
+  final Map<String, dynamic>? doctorDetails; // Made nullable
+  final String sessionId;
+  const VideoCallDisconnectedScreen({
+    super.key,
+
+    required this.token,
+    required this.doctorDetails,
+    required this.sessionId,
+
+
+  });
+
+  @override
+  State<VideoCallDisconnectedScreen> createState() => _VideoCallDisconnectedScreenState();
+}
+
+class _VideoCallDisconnectedScreenState extends State<VideoCallDisconnectedScreen> {
+
+  bool _isRetrying = false;
+  double? _currentLatitude;
+  double? _currentLongitude;
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+  }
+  Future<void> _getCurrentLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+        setState(() {
+          _currentLatitude = position.latitude;
+          _currentLongitude = position.longitude;
+        });
+      }
+    } catch (e) {
+      print('Error getting location: $e');
+    }
+  }
+
+
+  // Retry same doctor API call
+  Future<void> _retrySameDoctor() async {
+    if (_isRetrying) return;
+
+    setState(() {
+      _isRetrying = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseapi/patient/retry_same_doctor_consultation'),
+        headers: {
+          'Authorization': 'Bearer ${widget.token}',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'session_id': widget.sessionId,
+          'latitude': _currentLatitude?.toString(),
+          'longitude': _currentLongitude?.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['message'] ?? 'Doctor re-notified successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // You can navigate to waiting screen or update UI as needed
+        // For example, you might want to navigate back to a waiting screen
+        // Navigator.of(context).pushReplacement(
+        //   MaterialPageRoute(
+        //     builder: (context) => WaitingScreen(sessionId: widget.sessionId),
+        //   ),
+        // );
+
+      } else {
+        // Show error message
+        final errorData = json.decode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorData['message'] ?? 'Failed to retry consultation'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error retrying same doctor: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Network error. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isRetrying = false;
+      });
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +293,7 @@ class VideoCallDisconnectedScreen extends StatelessWidget {
 
             // Doctor info
             Text(
-              'Dr Name: Xyz',
+              widget.doctorDetails?['full_name'] ?? 'Dr. Unknown',
               style: TextStyle(
                 fontSize: isTablet ? 18 : screenWidth * 0.035,
                 fontWeight: FontWeight.w500,
@@ -183,7 +303,7 @@ class VideoCallDisconnectedScreen extends StatelessWidget {
             ),
             SizedBox(height: isTablet ? 8 : screenHeight * 0.005),
             Text(
-              'Mobile: 1234567890',
+              '${widget.doctorDetails?['qualification'] ?? ''}, ${widget.doctorDetails?['speciality'] ?? ''}',
               style: TextStyle(
                 fontSize: isTablet ? 14 : screenWidth * 0.03,
                 color: Colors.black54,
@@ -196,25 +316,56 @@ class VideoCallDisconnectedScreen extends StatelessWidget {
             // Call Now button (Red)
             SizedBox(
               width: double.infinity,
-              height: isTablet ? 50 : screenHeight * 0.055,
+              height: isTablet ? 60 : 50,
               child: ElevatedButton(
-                onPressed: () {
-                  // Handle call now action
-                },
+                onPressed: _isRetrying ? null : _retrySameDoctor,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF3B30),
-                  foregroundColor: Colors.white,
-                  elevation: 4,
+                  backgroundColor: const Color(0xFF243B6D),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text(
-                  'Call Now',
-                  style: TextStyle(
-                    fontSize: isTablet ? 16 : screenWidth * 0.037,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: _isRetrying
+                    ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      width: 10,
+                      height: 10,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Connecting',
+                      style: TextStyle(
+                        fontSize: isTablet ? 18 : 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                )
+                    : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Call Now',
+                      style: TextStyle(
+                        fontSize: isTablet ? 18 : 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

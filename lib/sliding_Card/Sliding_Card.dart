@@ -139,7 +139,7 @@ class _SpecialitiesScreenState extends State<SpecialitiesScreen> with SingleTick
               final specialities = snapshot.data ?? [];
 
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(15.0),
+                padding: const EdgeInsets.all(7.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

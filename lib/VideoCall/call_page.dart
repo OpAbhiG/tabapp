@@ -1124,12 +1124,14 @@ class CallPage extends StatefulWidget {
   final String sessionid;
   final String token;
 
+
   const CallPage({
     super.key,
     required this.id,
     required this.localUserId,
     required this.sessionid,
     required this.token,
+
   });
 
   @override
@@ -1166,7 +1168,9 @@ class _CallPageState extends State<CallPage> {
   ////need update
   // String doctorImageUrl="";
 
-
+  Timer? _autoNavigationTimer; // New timer for auto navigation after 2 minutes
+  Timer? _disconnectionCheckTimer; // Timer to check for prolonged disconnection
+  bool _hasNavigatedDueToDisconnection = false; // Flag to prevent multiple navigations
 
 
 
@@ -1196,9 +1200,57 @@ class _CallPageState extends State<CallPage> {
           () => heartRate,
           () => bodyTemp,
     );
+
+    // Start the 2-minute timer for auto navigation
+    _startAutoNavigationTimer();
+
+    // Start monitoring internet connectivity
+    _startConnectivityMonitoring();
   }
 
 
+// New method to start the 2-minute auto navigation timer
+  void _startAutoNavigationTimer() {
+    _autoNavigationTimer = Timer(const Duration(minutes: 2), () {
+      if (mounted && !_hasNavigatedDueToDisconnection) {
+        print('2 minutes elapsed, automatically navigating...');
+        _navigateToDisconnectedScreen();
+      }
+    });
+  }
+
+  void _startConnectivityMonitoring() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> result) {
+      final bool isConnected = !result.contains(ConnectivityResult.none);
+
+      if (mounted) {
+        setState(() {
+          _isConnected = isConnected;
+        });
+
+        if (!isConnected) {
+          print('Internet disconnected, starting disconnection check timer...');
+          _startDisconnectionCheckTimer();
+        } else {
+          print('Internet reconnected, canceling disconnection check timer...');
+          _disconnectionCheckTimer?.cancel();
+        }
+      }
+    });
+  }
+
+  // Timer to check if disconnection persists for too long
+  void _startDisconnectionCheckTimer() {
+    _disconnectionCheckTimer?.cancel(); // Cancel any existing timer
+
+    _disconnectionCheckTimer = Timer(const Duration(seconds: 10), () {
+      if (mounted && !_isConnected && !_hasNavigatedDueToDisconnection) {
+        print('Internet disconnected for 10 seconds, navigating to disconnected screen...');
+        _hasNavigatedDueToDisconnection = true;
+        _navigateToDisconnectedScreen();
+      }
+    });
+  }
 
   Future<void> _loadDoctorDetails() async {
     final prefs = await SharedPreferences.getInstance();
@@ -1286,25 +1338,167 @@ class _CallPageState extends State<CallPage> {
     }
   }
 
-  void _navigateToThankYouScreen() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => BookingConfirmationScreen(
-          token: widget.token,
-        ),
-      ),
-    );
-  }
 
+
+
+  Timer? _navigationTimer;
+
+
+  // void _navigateToThankYouScreen() {
+  //   Navigator.of(context).pushReplacement(
+  //     MaterialPageRoute(
+  //       builder: (context) => BookingConfirmationScreen(
+  //         token: widget.token,
+  //       ),
+  //     ),
+  //   );
+  // }
+
+// Navigate specifically for disconnection scenario
+// Navigate specifically for disconnection scenario
+  void _navigateToDisconnectedScreen() async {
+    // Cancel all timers
+    _autoNavigationTimer?.cancel();
+    _disconnectionCheckTimer?.cancel();
+
+    try {
+      // Try to call the API (might fail due to no internet)
+      Map<String, dynamic>? response;
+      try {
+        response = await _getLastConnectedDoctor();
+      } catch (e) {
+        print('API call failed due to no internet: $e');
+        response = null;
+      }
+
+      if (mounted) {
+        // Extract session ID safely with proper null checking
+        String sessionId;
+        if (response != null &&
+            response['data'] != null &&
+            response['data']['session_id'] != null) {
+          sessionId = response['data']['session_id'].toString();
+        } else {
+          sessionId = widget.sessionid;
+        }
+
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => VideoCallDisconnectedScreen(
+              token: widget.token,
+              doctorDetails: response?['data'],
+              sessionId: sessionId,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error in _navigateToDisconnectedScreen: $e');
+
+
+    }
+  }
+  Future<void> _navigateToThankYouScreen() async {
+    // Cancel the auto navigation timer if it's still running
+    _autoNavigationTimer?.cancel();
+
+    // Prevent navigation if already navigated due to disconnection
+    if (_hasNavigatedDueToDisconnection) {
+      return;
+    }
+
+    try {
+      // Call get last connected doctor API
+      final response = await _getLastConnectedDoctor();
+      final isConnected = _isConnected;
+
+      if (response['statusCode'] == 200 || !isConnected) {
+        // Navigate to VideoCallDisconnectedScreen with doctor details
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => VideoCallDisconnectedScreen(
+                token: widget.token,
+                doctorDetails: response['data'],
+                sessionId: response['data']['session_id']?.toString() ?? widget.sessionid,
+              ),
+            ),
+          );
+        }
+      } else {
+        // Navigate to BookingConfirmationScreen as fallback
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => BookingConfirmationScreen(
+                token: widget.token,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error getting last connected doctor: $e');
+      // Navigate to BookingConfirmationScreen as fallback
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => BookingConfirmationScreen(
+              token: widget.token,
+            ),
+          ),
+        );
+      }
+    }
+  }
+  // Method to call get last connected doctor API
+// Method to call get last connected doctor API
+  Future<Map<String, dynamic>> _getLastConnectedDoctor() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseapi/patient/get_last_connected_doctor'),
+        headers: {
+          'Authorization': 'Bearer ${widget.token}',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final decodedBody = json.decode(response.body);
+        return {
+          'statusCode': response.statusCode,
+          'data': decodedBody,
+        };
+      } else {
+        return {
+          'statusCode': response.statusCode,
+          'data': null,
+        };
+      }
+    } catch (e) {
+      print('Failed to get last connected doctor: $e');
+      // Return a proper Map structure even on error
+      return {
+        'statusCode': 0, // or some error code
+        'data': null,
+      };
+    }
+  }
   @override
   void dispose() {
+    _navigationTimer?.cancel();
+
+    _autoNavigationTimer?.cancel(); // Cancel the auto navigation timer
+    _disconnectionCheckTimer?.cancel(); // Cancel the disconnection check timer
+    _connectivitySubscription.cancel(); // Cancel connectivity subscription
+
     // Stop API service
     _apiService.stopSendingData();
 
     // Cancel sensor subscription
     sensorSubscription.cancel();
 
-    Provider.of<ConnectivityProvider>(context, listen: false).disposeStream();
+    // Provider.of<ConnectivityProvider>(context, listen: false).disposeStream();
 
     super.dispose();
   }
@@ -1315,12 +1509,12 @@ class _CallPageState extends State<CallPage> {
 
   @override
   Widget build(BuildContext context) {
-
-    final isConnected = Provider.of<ConnectivityProvider>(context).isConnected;
-
-    if (!isConnected) {
-      return const VideoCallDisconnectedScreen(); // custom widget to show offline message
-    }
+    //
+    // final isConnected = Provider.of<ConnectivityProvider>(context).isConnected;
+    //
+    // if (!isConnected) {
+    //   return const VideoCallDisconnectedScreen(); // custom widget to show offline message
+    // }
 
     final isTablet = MediaQuery.of(context).size.shortestSide >= 700;
     final topPadding = MediaQuery.of(context).padding.top + (isTablet ? 20 : 10);
@@ -1431,6 +1625,8 @@ class _CallPageState extends State<CallPage> {
             },
           ),
         ),
+
+
         Positioned(
           bottom: 80,
           left: 10,
